@@ -1,0 +1,25 @@
+{
+  "name": "株式会社GLOVAL 営業SFA",
+  "short_name": "GLOVAL SFA",
+  "description": "株式会社GLOVAL専用 高機能営業支援・商談・見積・請求管理システム",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/app_icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/app_icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
+

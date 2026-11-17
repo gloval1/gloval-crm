@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>__TYPE_TITLE_____CUSTOMER_NAME__</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 10mm 12mm 10mm 12mm;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      color: #0f172a;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .action-bar {
+      background: #0f172a;
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 9999;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+    .action-btn {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 9px 20px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .action-btn.pdf {
+      background: #059669;
+      margin-left: 8px;
+    }
+    .action-btn:hover {
+      opacity: 0.9;
+    }
+    .doc-page {
+      max-width: 794px;
+      margin: 0 auto;
+      padding: 24px 20px 40px 20px;
+      background: #ffffff;
+    }
+    @media print {
+      .action-bar {
+        display: none !important;
+      }
+      .doc-page {
+        padding: 0 !important;
+        max-width: 100% !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="action-bar">
+    <div style="color: #94a3b8; font-size: 13px; font-weight: bold;">
+      📄 __TYPE_TITLE__ 印刷・保存プレビュー (A4規格)
+    </div>
+    <div>
+      <button class="action-btn" onclick="window.print()">🖨️ 印刷する</button>
+      <button class="action-btn pdf" onclick="downloadPdf()">📥 PDF保存</button>
+      <button class="action-btn" style="background: #475569; margin-left: 8px;" onclick="window.close()">✕ 閉じる</button>
+    </div>
+  </div>
+
+  <div class="doc-page" id="printable-doc">
+    <div style="width: 100%; font-size: 12px; line-height: 1.45;">
+      
+      <!-- TOP SECTION -->
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 14px; border-bottom: 2px solid #0f172a;">
+        <div>
+          <div style="font-size: 26px; font-weight: 900; letter-spacing: 2px; color: #0f172a;">__TYPE_TITLE__</div>
+          <div style="font-size: 12px; font-weight: bold; letter-spacing: 3px; margin-top: 3px; color: #334155;">__SUB_TITLE__</div>
+        </div>
+
+        <div style="text-align: right; font-size: 11px; line-height: 1.35;">
+          <div style="font-family: monospace; color: #475569;"><strong>__DATE_LABEL__</strong> <span style="font-weight: bold; color: #0f172a; margin-left: 4px;">__DOC_DATE__</span></div>
+          <div style="font-family: monospace; color: #475569; margin-top: 2px;"><strong>__NO_LABEL__</strong> <span style="font-weight: bold; color: #0f172a; margin-left: 4px;">__DOC_NUMBER__</span></div>
+
+          <div style="position: relative; margin-top: 10px; text-align: right; padding-right: 4px;">
+            <img src="__SEAL_BASE64__" alt="角印" style="position: absolute; right: -6px; top: -6px; width: 78px; height: auto; opacity: 0.95; pointer-events: none;">
+            <div style="font-size: 15px; font-weight: 900; color: #0f172a; letter-spacing: 0.5px;">株式会社GLOVAL</div>
+            <div style="font-size: 11px; font-weight: bold; color: #1d4ed8; font-family: monospace; margin-top: 2px;">登録番号: T5120101073671</div>
+            <div style="color: #475569; font-size: 11px; margin-top: 3px;">〒591-8023</div>
+            <div style="color: #475569; font-size: 11px;">大阪府堺市北区中百舌鳥町5丁3番地</div>
+            <div style="color: #475569; font-size: 11px;">メゾンアリエス401</div>
+            <div style="color: #0f172a; font-size: 11px; font-weight: bold; margin-top: 3px;">担当: 代表取締役 黒川剛</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CLIENT & SUBJECT -->
+      <div style="margin-top: 18px; display: flex; justify-content: space-between; align-items: flex-end;">
+        <div style="flex: 1; max-width: 480px;">
+          <div style="border-bottom: 2px solid #0f172a; padding-bottom: 5px; font-size: 19px; font-weight: 900; color: #0f172a;">
+            __CUSTOMER_NAME__ <span style="font-size: 13px; font-weight: bold; margin-left: 6px;">御中</span>
+          </div>
+          <div style="margin-top: 10px; font-size: 12px; color: #334155;">
+            <div style="display: flex; margin-bottom: 4px;"><strong style="color: #0f172a; width: 45px;">件名:</strong> <span style="font-weight: bold; color: #0f172a;">__SUBJECT__</span></div>
+            <div style="display: flex;"><strong style="color: #475569; width: 85px;">__TERMS_LABEL__</strong> <span style="color: #0f172a; font-family: monospace;">__TERMS_VALUE__</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TOTAL AMOUNT BAR -->
+      <div style="margin: 16px 0; display: flex; justify-content: space-between; align-items: center; __AMOUNT_BAR_STYLE__">
+        <div style="font-weight: 900; font-size: 13px; color: #1e293b; letter-spacing: 0.5px;">__TOTAL_TITLE__</div>
+        <div style="font-size: 26px; font-weight: 900; font-family: monospace; color: __TOTAL_COLOR__;">
+          ¥ __TOTAL_AMOUNT____TOTAL_SUFFIX__
+        </div>
+      </div>
+
+      <!-- ITEMS TABLE -->
+      <table style="width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 11px;">
+        <thead>
+          <tr style="background: #f1f5f9; color: #0f172a; border-top: 1px solid #cbd5e1; border-bottom: 1px solid #cbd5e1;">
+            <th style="padding: 7px 8px; text-align: left; font-weight: bold;">品目・摘要</th>
+            <th style="padding: 7px 6px; text-align: center; width: 55px; font-weight: bold;">数量</th>
+            <th style="padding: 7px 6px; text-align: center; width: 55px; font-weight: bold;">単位</th>
+            <th style="padding: 7px 8px; text-align: right; width: 105px; font-weight: bold;">単価</th>
+            <th style="padding: 7px 8px; text-align: right; width: 115px; font-weight: bold;">金額</th>
+          </tr>
+        </thead>
+        <tbody>
+          __ITEMS_TR__
+        </tbody>
+        <tfoot>
+          <tr style="border-top: 2px solid #cbd5e1;">
+            <td colspan="3"></td>
+            <td style="padding: 6px 8px; text-align: right; font-weight: bold; color: #475569;">小計 (税抜)</td>
+            <td style="padding: 6px 8px; text-align: right; font-family: monospace; font-weight: bold; color: #0f172a;">¥__SUBTOTAL__</td>
+          </tr>
+          <tr>
+            <td colspan="3"></td>
+            <td style="padding: 5px 8px; text-align: right; color: #475569;">消費税 (10%)</td>
+            <td style="padding: 5px 8px; text-align: right; font-family: monospace; color: #334155;">¥__TAX__</td>
+          </tr>
+          <tr style="border-top: 1px solid #0f172a; background: #f8fafc; font-weight: 900;">
+            <td colspan="3"></td>
+            <td style="padding: 7px 8px; text-align: right; font-size: 13px; color: #0f172a;">合計金額</td>
+            <td style="padding: 7px 8px; text-align: right; font-size: 15px; font-family: monospace; color: #0f172a;">¥__TOTAL_AMOUNT__</td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <!-- BOTTOM SECTION -->
+      <div style="margin-top: 18px; padding-top: 12px; border-top: 1px solid #cbd5e1; display: flex; justify-content: space-between; gap: 16px;">
+        <!-- Notes -->
+        <div style="flex: 1;">
+          <div style="font-weight: bold; color: #0f172a; font-size: 11px; margin-bottom: 4px;">備考</div>
+          <div style="border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; font-size: 10px; color: #475569; min-height: 70px; white-space: pre-wrap; line-height: 1.5; background: #fafafa;">__NOTES__</div>
+        </div>
+
+        <!-- Bank Info -->
+        <div style="flex: 1; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px; font-size: 11px;">
+          <div style="font-weight: bold; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+            <span>Bank Details (お振込先)</span>
+            <span style="font-size: 9px; color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; padding: 1px 4px; border-radius: 3px;">国内振込</span>
+          </div>
+          <div style="line-height: 1.4; color: #334155; font-size: 10.5px;">
+            <div><strong style="color: #0f172a; font-size: 11px;">GMOあおぞらネット銀行</strong></div>
+            <div style="font-family: monospace;">フリー支店 (普通) 1219666</div>
+            <div style="font-weight: bold;">口座名義：カ）グローヴァル</div>
+            <div style="font-size: 9.5px; color: #e11d48; margin-top: 3px;">※振込手数料は貴社にてご負担願います。</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    function downloadPdf() {
+      const element = document.getElementById('printable-doc');
+      const filename = '__TYPE_TITLE_____CUSTOMER_NAME_____DOC_DATE__.pdf';
+      const opt = {
+        margin: 0,
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2.5, useCORS: true, width: 794, windowWidth: 794 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: 'avoid-all' }
+      };
+      html2pdf().set(opt).from(element).save();
+    }
+
+    // Auto-open print dialog on load
+    window.addEventListener('load', function() {
+      setTimeout(function() {
+        window.print();
+      }, 500);
+    });
+  </script>
+</body>
+</html>
+

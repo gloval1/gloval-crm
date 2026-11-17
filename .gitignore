@@ -1,0 +1,15 @@
+bin/
+backups/
+*.log
+tunnel_url.txt
+__pycache__/
+*.pyc
+.DS_Store
+*.command
+fix_*.py
+clean_*.py
+update_*.py
+apply_*.py
+generate_*.py
+optimize_*.py
+remove_*.py

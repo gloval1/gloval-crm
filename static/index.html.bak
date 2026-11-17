@@ -1,0 +1,3360 @@
+<!DOCTYPE html>
+<html lang="ja" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="GLOVAL CRM">
+  <meta name="format-detection" content="telephone=no">
+  <title>GLOVAL CRM - 株式会社GLOVAL 営業管理プラットフォーム</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Vue 3 -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- QRCode.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- Canvas Confetti (受注祝福演出) -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              900: '#312e81',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    [v-cloak] { display: none; }
+    html, body {
+      -webkit-text-size-adjust: 100%;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    .kanban-column {
+      min-width: 280px;
+      max-width: 320px;
+    }
+    @media (max-width: 768px) {
+      .kanban-column {
+        min-width: 82vw;
+        max-width: 88vw;
+      }
+      /* Prevent iOS Safari auto-zoom on input focus */
+      input, select, textarea {
+        font-size: 16px !important;
+      }
+    }
+    .pb-safe {
+      padding-bottom: max(env(safe-area-inset-bottom, 0px), 16px);
+    }
+    .pt-safe {
+      padding-top: env(safe-area-inset-top, 0px);
+    }
+    /* Hide scrollbars for pill bars */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    /* Custom subtle scrollbars for desktop */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    @media print {
+      body * {
+        visibility: hidden !important;
+      }
+      #quotation-print-area, #quotation-print-area * {
+        visibility: visible !important;
+      }
+      #quotation-print-area {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 24px !important;
+        background: white !important;
+        box-shadow: none !important;
+        border: none !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-[#f8fafc] text-slate-800 antialiased h-full flex flex-col font-sans selection:bg-brand-500 selection:text-white">
+  <div id="app" v-cloak class="flex-1 flex flex-col h-full overflow-hidden">
+
+    <!-- AUTH / PASSWORD LOCK SCREEN OVERLAY -->
+    <div v-if="!isAuthenticated" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl max-w-sm w-full p-7 shadow-2xl border border-slate-100 text-center">
+        <div class="w-14 h-14 bg-gradient-to-tr from-brand-600 to-indigo-500 text-white rounded-2xl flex items-center justify-center font-black text-2xl mx-auto shadow-lg shadow-brand-500/30 mb-4 tracking-wider">
+          G
+        </div>
+        <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">株式会社GLOVAL</h2>
+        <p class="text-xs text-slate-500 mt-1 font-medium">営業管理システム (SFA / CRM)</p>
+        
+        <div class="mt-6 text-left">
+          <label class="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+            <span>社内共通の合言葉</span>
+            <span class="text-[10px] text-brand-600 font-normal">3名共通</span>
+          </label>
+          <input 
+            v-model="loginPassword" 
+            type="password" 
+            @keyup.enter="handleLogin"
+            placeholder="合言葉を入力 (初期値: gloval)" 
+            class="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-mono"
+            autofocus
+          />
+          <div v-if="loginError" class="text-xs text-rose-600 font-bold mt-2 flex items-center space-x-1">
+            <span>⚠️</span><span>{{ loginError }}</span>
+          </div>
+          <div class="flex items-center mt-3.5 text-xs text-slate-600">
+            <input type="checkbox" id="rememberMe" v-model="rememberMe" class="rounded text-brand-600 mr-2 cursor-pointer w-4 h-4">
+            <label for="rememberMe" class="cursor-pointer select-none">この端末を記憶する (自動ログイン)</label>
+          </div>
+          <button 
+            @click="handleLogin" 
+            class="w-full mt-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl text-sm transition shadow-md shadow-brand-600/20 cursor-pointer flex items-center justify-center space-x-1.5"
+          >
+            <span>🔐</span><span>認証して利用開始</span>
+          </button>
+          <p class="text-[11px] text-slate-400 text-center mt-3">※初期合言葉は <code class="bg-slate-100 px-1 py-0.5 rounded text-slate-600 font-mono font-bold">gloval</code> です</p>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- TOP GLOBAL BAR -->
+    <header class="bg-white border-b border-slate-200 px-3.5 sm:px-6 py-2.5 flex items-center justify-between shadow-2xs z-30 flex-shrink-0">
+      <div class="flex items-center space-x-2.5 sm:space-x-4">
+        <!-- Logo & Org Name -->
+        <div class="flex items-center space-x-2 cursor-pointer" @click="currentTab = 'dashboard'">
+          <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-600 flex items-center justify-center text-white font-extrabold text-sm shadow-xs tracking-wider flex-shrink-0">
+            G
+          </div>
+          <div>
+            <div class="flex items-center space-x-1.5">
+              <span class="text-sm font-extrabold text-slate-900 tracking-tight">GLOVAL CRM</span>
+              <span class="hidden md:inline-block px-1.5 py-0.5 text-[10px] font-semibold bg-brand-50 text-brand-600 rounded border border-brand-100">株式会社GLOVAL</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Global Search Bar (Hidden on phone header) -->
+        <div class="hidden md:block relative w-72">
+          <input 
+            v-model="globalSearchQuery" 
+            type="text" 
+            placeholder="案件・顧客・メモを検索..." 
+            class="w-full text-xs pl-8 pr-3 py-1.5 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition placeholder:text-slate-400"
+          >
+          <svg class="w-3.5 h-3.5 absolute left-2.5 top-2 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </div>
+      </div>
+
+      <!-- Right Controls -->
+      <div class="flex items-center space-x-2">
+        <!-- LAN & Remote Sharing Live Badge -->
+        <button @click="openShareModal" class="flex items-center space-x-1 text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 px-2 py-1.5 rounded-lg transition shadow-2xs cursor-pointer">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="font-bold text-[11px]">共有</span>
+        </button>
+
+        <!-- Current Operating User Picker -->
+        <div class="flex items-center space-x-1.5 border-l border-slate-200 pl-2">
+          <select v-model="currentUserId" class="bg-white text-xs font-bold text-slate-800 border border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none cursor-pointer max-w-[80px] sm:max-w-none truncate">
+            <option v-for="u in users" :key="u.id" :value="u.id">{{ u.name }}</option>
+          </select>
+          <div :style="{ backgroundColor: currentUser?.avatar_color || '#4f46e5' }" class="w-7 h-7 rounded-lg text-white text-xs flex items-center justify-center font-bold shadow-2xs flex-shrink-0">
+            {{ currentUser?.name?.charAt(0) || 'G' }}
+          </div>
+        </div>
+
+        <!-- Settings Button -->
+        <button @click="showSettingsModal = true" title="設定・管理" class="p-1.5 text-xs text-slate-600 hover:text-slate-900 border border-slate-200 hover:border-slate-300 rounded-lg transition bg-white shadow-2xs cursor-pointer">
+          <span>⚙️</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- NAVIGATION TABS & QUICK ACTION BAR (Desktop & Tablet only) -->
+    <nav class="hidden md:flex bg-white border-b border-slate-200/80 px-6 items-center justify-between flex-shrink-0 z-20">
+      <div class="flex space-x-7">
+        <button 
+          v-for="tab in tabs" 
+          :key="tab.id"
+          @click="currentTab = tab.id"
+          :class="[
+            currentTab === tab.id 
+              ? 'border-brand-600 text-brand-600 font-bold' 
+              : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300 font-medium',
+            'py-3.5 border-b-2 text-xs flex items-center space-x-1.5 transition-all cursor-pointer'
+          ]"
+        >
+          <span class="text-sm">{{ tab.icon }}</span>
+          <span>{{ tab.label }}</span>
+          <span v-if="tab.badge" class="ml-1 px-1.5 py-0.2 text-[10px] rounded-full bg-slate-100 text-slate-600 font-semibold">
+            {{ tab.badge }}
+          </span>
+        </button>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div class="flex items-center space-x-2">
+        <button @click="openNewDealModal" class="bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow-xs shadow-brand-500/20 transition flex items-center space-x-1.5 cursor-pointer">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          <span>新規案件</span>
+        </button>
+        <button @click="openNewActivityModal" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300/80 text-xs font-semibold px-3 py-1.5 rounded-lg shadow-xs transition flex items-center space-x-1.5 cursor-pointer">
+          <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          <span>予定・活動登録</span>
+        </button>
+        <button @click="openNewCustomerModal" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300/80 text-xs font-semibold px-3 py-1.5 rounded-lg shadow-xs transition flex items-center space-x-1.5 cursor-pointer">
+          <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+          <span>取引先追加</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- MAIN BODY -->
+    <main class="flex-1 overflow-y-auto p-3 sm:p-6 pb-28 md:pb-6 bg-slate-50/70">
+
+      <!-- MOBILE QUICK ACTION BUTTONS (iPhone friendly) -->
+      <div class="flex md:hidden items-center justify-between gap-2 mb-3.5 bg-white p-2 rounded-xl border border-slate-200 shadow-xs">
+        <button @click="openNewDealModal" class="flex-1 py-2 bg-brand-600 active:bg-brand-700 text-white rounded-lg text-xs font-bold flex items-center justify-center space-x-1 shadow-xs cursor-pointer">
+          <span class="text-sm">＋</span><span>案件</span>
+        </button>
+        <button @click="openNewActivityModal" class="flex-1 py-2 bg-slate-100 active:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold flex items-center justify-center space-x-1 border border-slate-200 cursor-pointer">
+          <span>📅</span><span>予定/ToDo</span>
+        </button>
+        <button @click="openNewCustomerModal" class="flex-1 py-2 bg-slate-100 active:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold flex items-center justify-center space-x-1 border border-slate-200 cursor-pointer">
+          <span>🏢</span><span>取引先</span>
+        </button>
+      </div>
+
+      <!-- TAB 1: DASHBOARD -->
+      <div v-if="currentTab === 'dashboard'" class="max-w-7xl mx-auto space-y-4 sm:space-y-6">
+        <!-- 4 KPI Metrics (2x2 on mobile, 4 in a row on desktop) -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
+          <div class="bg-white rounded-xl p-3 sm:p-5 border border-slate-200/80 shadow-xs relative overflow-hidden">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">当月 着地見込</span>
+              <span class="hidden sm:inline text-xs px-2 py-0.5 bg-brand-50 text-brand-600 font-semibold rounded-md border border-brand-100/60">確定＋仕掛</span>
+            </div>
+            <div class="mt-2 sm:mt-3 flex items-baseline space-x-2">
+              <span class="text-base sm:text-2xl font-extrabold text-slate-900 tracking-tight">¥{{ formatNumber(analytics.expected_total) }}</span>
+            </div>
+            <div class="mt-2 sm:mt-3 flex flex-col sm:flex-row justify-between text-[10px] sm:text-[11px] text-slate-400 border-t border-slate-100 pt-2 gap-0.5">
+              <span>仕掛: <strong class="text-slate-700">¥{{ formatNumber(analytics.pipeline_weighted) }}</strong></span>
+              <span>確定: <strong class="text-emerald-600">¥{{ formatNumber(analytics.total_won) }}</strong></span>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl p-3 sm:p-5 border border-slate-200/80 shadow-xs">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">当月 確定受注</span>
+              <span class="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 bg-emerald-50 text-emerald-700 font-bold rounded border border-emerald-100">成約</span>
+            </div>
+            <div class="mt-2 sm:mt-3">
+              <span class="text-base sm:text-2xl font-extrabold text-emerald-600 tracking-tight">¥{{ formatNumber(analytics.total_won) }}</span>
+            </div>
+            <div class="mt-2 sm:mt-3 flex flex-col sm:flex-row justify-between text-[10px] sm:text-[11px] text-slate-400 border-t border-slate-100 pt-2 gap-0.5">
+              <span>成約: <strong class="text-slate-700">{{ analytics.stages_count?.won || 0 }} 件</strong></span>
+              <span>単価: <strong class="text-slate-700">¥{{ formatNumber(averageWonDealAmount) }}</strong></span>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl p-3 sm:p-5 border border-slate-200/80 shadow-xs">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">仕掛総額</span>
+              <span class="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 bg-blue-50 text-blue-700 font-bold rounded border border-blue-100">{{ activeDealsCount }}件</span>
+            </div>
+            <div class="mt-2 sm:mt-3">
+              <span class="text-base sm:text-2xl font-extrabold text-slate-900 tracking-tight">¥{{ formatNumber(analytics.pipeline_total) }}</span>
+            </div>
+            <div class="mt-2 sm:mt-3 flex flex-col sm:flex-row justify-between text-[10px] sm:text-[11px] text-slate-400 border-t border-slate-100 pt-2 gap-0.5">
+              <span>加重: <strong class="text-brand-600">¥{{ formatNumber(analytics.pipeline_weighted) }}</strong></span>
+              <span>確度: <strong class="text-slate-700">{{ averageProbability }}%</strong></span>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl p-3 sm:p-5 border border-slate-200/80 shadow-xs">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">要対応ToDo</span>
+              <span class="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 bg-amber-50 text-amber-700 font-bold rounded border border-amber-200/60">期日管理</span>
+            </div>
+            <div class="mt-2 sm:mt-3 flex items-center justify-between">
+              <span class="text-base sm:text-2xl font-extrabold text-amber-600 tracking-tight">{{ pendingActivitiesCount }} 件</span>
+              <button @click="currentTab = 'activities'" class="text-[11px] text-brand-600 font-bold">一覧 →</button>
+            </div>
+            <div class="mt-2 sm:mt-3 flex flex-col sm:flex-row justify-between text-[10px] sm:text-[11px] text-slate-400 border-t border-slate-100 pt-2 gap-0.5">
+              <span>残ToDo: <strong class="text-slate-700">{{ pendingActivitiesCount }}件</strong></span>
+              <span>直近: <strong class="text-rose-600">{{ nextPendingDate || 'なし' }}</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- TODAY'S SCHEDULE & ACTIONS BANNER -->
+        <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-xs border-2 border-brand-500">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+            <div class="flex items-center space-x-2.5">
+              <span class="text-2xl p-2 bg-amber-50 rounded-xl border border-amber-200">☀️</span>
+              <div>
+                <div class="flex items-center space-x-2">
+                  <h3 class="font-black text-base text-slate-900 tracking-tight">本日の営業アクション</h3>
+                  <span class="px-2 py-0.5 bg-brand-50 text-brand-700 font-extrabold text-xs rounded-full border border-brand-200">
+                    {{ todayEvents.length }}件
+                  </span>
+                </div>
+                <span class="text-xs font-bold text-slate-600 font-mono mt-0.5 block">{{ todayStr }} の予定</span>
+              </div>
+            </div>
+            <button @click="openNewActivityForDate(todayStr)" class="text-xs bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-bold px-3 py-2 rounded-xl shadow-xs transition cursor-pointer flex items-center space-x-1">
+              <span>＋</span><span>予定を追加</span>
+            </button>
+          </div>
+
+          <div v-if="todayEvents.length > 0" class="space-y-2.5">
+            <div v-for="ev in todayEvents" :key="'today-' + ev.id + '-' + ev.eventType" class="bg-slate-50 hover:bg-slate-100/80 p-3 rounded-xl border border-slate-200 flex items-start justify-between gap-2.5 text-xs transition">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center space-x-2">
+                  <span class="px-2 py-0.5 rounded font-bold text-[10px]" :class="ev.eventType === 'activity' ? 'bg-brand-600 text-white' : (ev.eventType === 'todo' ? 'bg-amber-500 text-white' : 'bg-emerald-600 text-white')">
+                    {{ ev.typeLabel }}
+                  </span>
+                  <span class="font-extrabold text-slate-900 text-sm truncate cursor-pointer hover:underline hover:text-brand-600" @click="openCustomerDetailById(ev.customerId)">
+                    {{ ev.customerName }}
+                  </span>
+                  <span class="text-xs font-bold text-slate-500">担当: {{ ev.userName }}</span>
+                </div>
+                <div class="font-bold text-slate-800 mt-1 text-xs">{{ ev.title }}</div>
+                <p v-if="ev.details" class="text-slate-600 text-[11px] mt-0.5 line-clamp-1">{{ ev.details }}</p>
+              </div>
+
+              <!-- Quick Action on Today Card -->
+              <div class="flex items-center space-x-1.5 flex-shrink-0">
+                <button v-if="ev.eventType === 'todo'" @click="toggleActivity(ev.id)" class="px-3 py-1.5 rounded-lg font-bold text-xs border border-amber-400 bg-amber-50 text-amber-900 hover:bg-amber-100 transition cursor-pointer">
+                  {{ ev.isCompleted ? '✓ 完了済' : '完了にする' }}
+                </button>
+                <button @click="copyForLine(ev)" class="px-2.5 py-1.5 bg-white hover:bg-slate-100 rounded-lg text-xs font-bold text-slate-700 border border-slate-300 shadow-2xs cursor-pointer flex items-center space-x-1" title="LINE等に共有">
+                  <span>📋</span><span>共有</span>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div v-else class="text-center py-4 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-slate-600 text-xs font-bold">
+            🎉 本日予定されている商談や期日タスクはありません。<button @click="openNewActivityForDate(todayStr)" class="text-brand-600 underline font-black ml-1 cursor-pointer">予定を追加する →</button>
+          </div>
+        </div>
+
+        <!-- Charts Grid (Compact on mobile) -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-3.5 sm:gap-6">
+          <div class="lg:col-span-2 bg-white rounded-xl p-4 sm:p-6 border border-slate-200/80 shadow-xs">
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <h3 class="text-xs sm:text-sm font-bold text-slate-900">メンバー別 売上・仕掛見込状況</h3>
+                <p class="text-[10px] sm:text-xs text-slate-400 mt-0.5">確定受注額 ＋ パイプライン加重着地予想</p>
+              </div>
+              <span class="text-[10px] sm:text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">今期</span>
+            </div>
+            <div class="h-48 sm:h-64">
+              <canvas id="userPerfChart"></canvas>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl p-4 sm:p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <h3 class="text-xs sm:text-sm font-bold text-slate-900">商談フェーズ別 構成</h3>
+              </div>
+              <p class="text-[10px] sm:text-xs text-slate-400 mb-2 sm:mb-4">各ステージの金額構成比率</p>
+              <div class="h-40 sm:h-48 relative">
+                <canvas id="stageDoughnutChart"></canvas>
+              </div>
+            </div>
+            <div class="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 gap-1.5 text-[11px] sm:text-xs">
+              <div v-for="s in stages" :key="s.id" class="flex items-center space-x-1.5">
+                <span class="w-2 h-2 rounded-full" :style="{ backgroundColor: getStageHex(s.id) }"></span>
+                <span class="text-slate-600 truncate text-[11px]">{{ s.label }}:</span>
+                <span class="font-bold text-slate-900 text-[11px]">{{ analytics.stages_count?.[s.id] || 0 }}件</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Activities & Next Actions -->
+        <div class="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
+          <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900">直近の営業活動ログ & 次回アクション</h3>
+              <p class="text-xs text-slate-400 mt-0.5">最新の商談・訪問メモと次の打ち手</p>
+            </div>
+            <button @click="openNewActivityModal" class="text-xs text-brand-600 hover:text-brand-700 font-bold bg-brand-50 hover:bg-brand-100 px-3 py-1.5 rounded-lg transition">＋ 活動を記録</button>
+          </div>
+          <div class="divide-y divide-slate-100">
+            <div v-for="act in activities.slice(0, 5)" :key="act.id" class="p-4 hover:bg-slate-50/80 flex items-start space-x-4 transition">
+              <span class="text-xl p-2 rounded-xl bg-slate-100 border border-slate-200/60">{{ getActivityIcon(act.type) }}</span>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center space-x-2">
+                  <span class="font-bold text-sm text-slate-900 cursor-pointer hover:underline text-brand-600" @click="openCustomerDetailById(act.customer_id)">{{ act.customer_name || '未指定' }}</span>
+                  <span v-if="act.deal_title" class="text-xs text-slate-600 bg-slate-100 px-2 py-0.5 rounded font-medium border border-slate-200/60">{{ act.deal_title }}</span>
+                  <span class="text-xs text-slate-400">担当: {{ act.user_name }}</span>
+                  <span class="text-xs text-slate-400 ml-auto font-mono">{{ act.activity_date || act.created_at?.slice(0, 10) }}</span>
+                </div>
+                <p class="text-xs font-semibold text-slate-800 mt-1">{{ act.summary }}</p>
+                <p class="text-xs text-slate-500 mt-0.5 line-clamp-1 leading-relaxed">{{ act.details }}</p>
+                
+                <div v-if="act.next_action" class="mt-2.5 flex items-center space-x-3 bg-amber-50/80 border border-amber-200/70 rounded-lg px-3 py-1.5 text-xs text-amber-900">
+                  <input type="checkbox" :checked="act.is_completed" @change="toggleActivity(act.id)" class="rounded text-amber-600 focus:ring-amber-500 cursor-pointer">
+                  <span :class="{ 'line-through text-slate-400': act.is_completed }" class="font-semibold">次回: {{ act.next_action }}</span>
+                  <span class="text-amber-700 ml-auto text-[11px] font-mono">期日: {{ act.next_action_date || '未定' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: PIPELINE (KANBAN BOARD) -->
+      <div v-if="currentTab === 'pipeline'" class="h-full flex flex-col space-y-2">
+        <div class="flex items-center justify-between flex-shrink-0">
+          <div>
+            <h2 class="text-base sm:text-lg font-bold text-slate-900">案件進捗パイプライン</h2>
+            <p class="text-[11px] sm:text-xs text-slate-500">ステージ選択またはドラッグ＆ドロップで案件を進捗管理</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <div class="flex items-center space-x-1.5 text-xs bg-white border border-slate-200 px-2.5 sm:px-3.5 py-1.5 rounded-lg shadow-xs">
+              <span class="text-slate-400 font-medium text-[11px]">仕掛総額:</span>
+              <span class="text-xs sm:text-sm font-extrabold text-slate-900">¥{{ formatNumber(filteredDealsTotal) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mobile Stage Switcher Pills (Horizontal quick-filter for iPhone) -->
+        <div class="flex md:hidden overflow-x-auto pb-1 space-x-1.5 text-xs no-scrollbar -mx-1 px-1">
+          <button 
+            @click="mobilePipelineStage = 'all'" 
+            :class="[
+              mobilePipelineStage === 'all' ? 'bg-slate-900 text-white font-bold' : 'bg-white text-slate-600 border border-slate-200',
+              'px-3 py-1.5 rounded-full whitespace-nowrap shadow-2xs text-xs cursor-pointer'
+            ]"
+          >
+            全体 ({{ filteredDeals.length }})
+          </button>
+          <button 
+            v-for="s in stages" 
+            :key="'pill-' + s.id" 
+            @click="mobilePipelineStage = s.id"
+            :class="[
+              mobilePipelineStage === s.id ? 'bg-brand-600 text-white font-bold' : 'bg-white text-slate-600 border border-slate-200',
+              'px-3 py-1.5 rounded-full whitespace-nowrap shadow-2xs flex items-center space-x-1 text-xs cursor-pointer'
+            ]"
+          >
+            <span class="w-2 h-2 rounded-full inline-block" :style="{ backgroundColor: getStageHex(s.id) }"></span>
+            <span>{{ s.label }} ({{ getDealsInStage(s.id).length }})</span>
+          </button>
+        </div>
+
+        <!-- Lost Reason Analysis Accordion Toggle -->
+        <div v-if="analytics.stages_count?.lost > 0" class="bg-rose-50/70 rounded-xl border border-rose-200/80 p-3 text-xs mb-1">
+          <div class="flex items-center justify-between cursor-pointer" @click="showLostAnalysis = !showLostAnalysis">
+            <div class="flex items-center space-x-2">
+              <span class="text-rose-700 font-extrabold flex items-center space-x-1">
+                <span>📉</span><span>失注分析インサイト ({{ analytics.stages_count?.lost || 0 }}件)</span>
+              </span>
+              <span class="text-[10px] text-rose-500 hidden sm:inline">なぜ負けたか？理由の内訳</span>
+            </div>
+            <button class="text-rose-700 font-bold text-xs">{{ showLostAnalysis ? '閉じる ▲' : '内訳を表示 ▼' }}</button>
+          </div>
+          <div v-if="showLostAnalysis" class="mt-2.5 pt-2.5 border-t border-rose-200/60 space-y-1.5">
+            <div v-for="(count, r) in analytics.lost_reasons" :key="'lost-stat-' + r" class="flex items-center justify-between text-[11px]">
+              <span class="font-bold text-slate-700 truncate max-w-[200px]">{{ r }}</span>
+              <div class="flex items-center space-x-2">
+                <div class="w-24 sm:w-36 bg-slate-200 rounded-full h-2 overflow-hidden">
+                  <div class="bg-rose-500 h-2 rounded-full transition-all" :style="{ width: Math.round((count / (analytics.stages_count?.lost || 1)) * 100) + '%' }"></div>
+                </div>
+                <span class="font-mono font-bold text-slate-900 w-8 text-right">{{ count }}件</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kanban Columns (Snap scroll on mobile) -->
+        <div class="flex-1 overflow-x-auto overflow-y-hidden pb-4 snap-x snap-mandatory">
+          <div class="flex space-x-3 sm:space-x-4 h-full items-start">
+            <div 
+              v-for="stage in stages" 
+              :key="stage.id" 
+              v-show="mobilePipelineStage === 'all' || mobilePipelineStage === stage.id"
+              class="kanban-column bg-slate-100/70 rounded-xl border border-slate-200/80 flex flex-col max-h-full shadow-2xs snap-center flex-shrink-0"
+              @dragover.prevent
+              @drop="onDropDeal($event, stage.id)"
+            >
+              <!-- Column Header -->
+              <div class="p-3 border-b border-slate-200/80 bg-white rounded-t-xl flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                  <span class="w-2.5 h-2.5 rounded-full" :style="{ backgroundColor: getStageHex(stage.id) }"></span>
+                  <span class="text-xs font-bold text-slate-800">{{ stage.label }}</span>
+                  <span class="text-[11px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded-md">{{ getDealsInStage(stage.id).length }}</span>
+                </div>
+                <div class="text-right">
+                  <div class="text-[11px] font-extrabold text-slate-800">¥{{ formatNumber(getStageTotal(stage.id)) }}</div>
+                </div>
+              </div>
+
+              <!-- Deal Cards List -->
+              <div class="p-2 space-y-2.5 overflow-y-auto flex-1">
+                <div 
+                  v-for="deal in getDealsInStage(stage.id)" 
+                  :key="deal.id"
+                  draggable="true"
+                  @dragstart="onDragStartDeal($event, deal)"
+                  @click="openEditDealModal(deal)"
+                  class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs hover:shadow-md hover:border-brand-400 transition-all cursor-pointer group"
+                >
+                  <div class="flex items-start justify-between">
+                    <span class="text-[11px] font-semibold text-brand-600 truncate max-w-[170px] hover:underline" @click.stop="openCustomerDetailById(deal.customer_id)">
+                      {{ deal.customer_name }}
+                    </span>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-md" :class="getProbBadgeClass(deal.probability)">
+                      {{ deal.probability }}%
+                    </span>
+                  </div>
+                  
+                  <h4 class="text-xs font-bold text-slate-900 mt-1 line-clamp-2 leading-snug group-hover:text-brand-600 transition-colors">
+                    {{ deal.title }}
+                  </h4>
+
+                  <div class="mt-2.5 flex items-baseline justify-between">
+                    <div>
+                      <span class="text-sm font-extrabold text-slate-900 tracking-tight">¥{{ formatNumber(deal.amount) }}</span>
+                      <span class="text-[9px] text-slate-400 block font-normal leading-none mt-0.5">(税込: ¥{{ formatNumber(Math.round(deal.amount * 1.1)) }})</span>
+                    </div>
+                    <span class="text-[11px] text-slate-400 font-mono">予定: {{ deal.expected_close_date || '-' }}</span>
+                  </div>
+
+                  <!-- Inactivity Alert Badge -->
+                  <div v-if="deal.stage !== 'won' && deal.stage !== 'lost'" class="mt-2">
+                    <span v-if="isInactiveDeal(deal)" class="inline-flex items-center space-x-1 text-[10px] px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 font-bold animate-pulse">
+                      <span>⚠️</span><span>14日以上停滞 (フォロー推奨)</span>
+                    </span>
+                    <span v-else class="inline-flex items-center space-x-1 text-[10px] px-1.5 py-0.5 rounded bg-slate-50 text-slate-500 border border-slate-200/60 font-medium">
+                      <span>⏱️ 進行中</span>
+                      <span class="text-slate-400 ml-1">更新: {{ deal.updated_at?.slice(5, 10) }}</span>
+                    </span>
+                  </div>
+
+                  <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <div class="flex items-center space-x-1.5">
+                      <span :style="{ backgroundColor: deal.user_color || '#4f46e5' }" class="w-5 h-5 rounded-md text-[10px] text-white flex items-center justify-center font-bold">
+                        {{ deal.user_name?.charAt(0) || 'G' }}
+                      </span>
+                      <span class="text-[11px] text-slate-600 font-medium">{{ deal.user_name }}</span>
+                    </div>
+
+                    <select 
+                      :value="deal.stage" 
+                      @click.stop 
+                      @change="updateDealStage(deal.id, $event.target.value)" 
+                      class="text-[10px] font-bold bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 text-slate-600 focus:outline-none hover:bg-slate-100 cursor-pointer"
+                    >
+                      <option v-for="s in stages" :key="s.id" :value="s.id">{{ s.label }}</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div v-if="getDealsInStage(stage.id).length === 0" class="h-24 border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center text-xs text-slate-400">
+                  案件なし
+                </div>
+              </div>
+
+              <!-- Quick Add Button -->
+              <div class="p-2 border-t border-slate-200/80 bg-white/50 rounded-b-xl">
+                <button @click="openNewDealModalWithStage(stage.id)" class="w-full py-1 text-xs font-semibold text-slate-500 hover:text-brand-600 hover:bg-white rounded-lg transition text-center cursor-pointer">
+                  ＋ 案件を追加
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: CALENDAR -->
+      <div v-if="currentTab === 'calendar'" class="max-w-7xl mx-auto space-y-3 sm:space-y-4">
+        <!-- Calendar Controls Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-3 sm:p-4 rounded-xl border border-slate-200/80 shadow-xs gap-3">
+          <div class="flex flex-wrap items-center justify-between sm:justify-start gap-2.5">
+            <h2 class="text-base sm:text-xl font-extrabold text-slate-900 tracking-tight">
+              {{ calendarYear }}年 {{ calendarMonth + 1 }}月
+            </h2>
+            <div class="flex items-center space-x-1 border border-slate-200 rounded-lg p-0.5 bg-slate-50">
+              <button @click="prevCalendarMonth" class="px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-white rounded transition">＜</button>
+              <button @click="todayCalendarMonth" class="px-2.5 py-1 text-xs font-bold text-brand-600 hover:bg-white rounded transition">今月</button>
+              <button @click="nextCalendarMonth" class="px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-white rounded transition">＞</button>
+            </div>
+
+            <!-- Calendar View Mode Switcher (Month vs Agenda) -->
+            <div class="flex items-center space-x-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200/80 text-xs">
+              <button 
+                @click="calendarViewMode = 'month'" 
+                :class="[calendarViewMode === 'month' ? 'bg-white shadow-2xs font-bold text-brand-600' : 'text-slate-500 hover:text-slate-800', 'px-2.5 py-1 rounded-md transition cursor-pointer text-xs']"
+              >
+                📅 月間
+              </button>
+              <button 
+                @click="calendarViewMode = 'agenda'" 
+                :class="[calendarViewMode === 'agenda' ? 'bg-white shadow-2xs font-bold text-brand-600' : 'text-slate-500 hover:text-slate-800', 'px-2.5 py-1 rounded-md transition cursor-pointer text-xs']"
+              >
+                📋 直近予定リスト
+              </button>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between sm:justify-end space-x-3 text-xs">
+            <div class="flex items-center space-x-2 border-r border-slate-200 pr-2.5 text-[11px]">
+              <span class="flex items-center space-x-1"><span class="w-2 h-2 rounded-full bg-brand-500"></span><span class="text-slate-500">商談</span></span>
+              <span class="flex items-center space-x-1"><span class="w-2 h-2 rounded-full bg-amber-500"></span><span class="text-slate-500">ToDo</span></span>
+              <span class="flex items-center space-x-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span><span class="text-slate-500">完了予定</span></span>
+            </div>
+            <button @click="openNewActivityForDate(selectedCalendarDate)" class="bg-brand-600 hover:bg-brand-700 text-white font-bold px-2.5 sm:px-3 py-1.5 rounded-lg shadow-xs transition flex items-center space-x-1 cursor-pointer text-xs">
+              <span>＋</span><span>予定追加</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- VIEW 1: MONTH GRID VIEW -->
+        <div v-if="calendarViewMode === 'month'" class="grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-4">
+          <!-- Calendar Month Grid (3 cols) -->
+          <div class="lg:col-span-3 bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden flex flex-col">
+            <div class="grid grid-cols-7 border-b border-slate-200 bg-slate-50/70 text-center text-xs font-bold py-2">
+              <span class="text-rose-500">日</span>
+              <span class="text-slate-700">月</span>
+              <span class="text-slate-700">火</span>
+              <span class="text-slate-700">水</span>
+              <span class="text-slate-700">木</span>
+              <span class="text-slate-700">金</span>
+              <span class="text-blue-500">土</span>
+            </div>
+
+            <!-- Calendar Days Cells -->
+            <div class="grid grid-cols-7 auto-rows-fr flex-1 divide-x divide-y divide-slate-100 bg-slate-100/40">
+              <div 
+                v-for="day in calendarGridDays" 
+                :key="day.dateStr"
+                @click="selectedCalendarDate = day.dateStr"
+                :class="[
+                  day.isCurrentMonth ? 'bg-white' : 'bg-slate-50/70 text-slate-300',
+                  selectedCalendarDate === day.dateStr ? 'ring-2 ring-brand-500 z-10 bg-brand-50/30' : '',
+                  'min-h-[50px] sm:min-h-[110px] p-1 sm:p-2 transition cursor-pointer flex flex-col hover:bg-brand-50/20'
+                ]"
+              >
+                <!-- Day Number -->
+                <div class="flex items-center justify-between mb-0.5 sm:mb-1.5">
+                  <span 
+                    :class="[
+                      day.isToday ? 'bg-brand-600 text-white font-bold w-5 h-5 rounded-full flex items-center justify-center text-[10px] sm:text-[11px] shadow-xs' : 'text-[11px] sm:text-xs font-semibold',
+                      day.isCurrentMonth ? (day.dayOfWeek === 0 ? 'text-rose-500' : (day.dayOfWeek === 6 ? 'text-blue-600' : 'text-slate-800')) : 'text-slate-300'
+                    ]"
+                  >
+                    {{ day.dayNum }}
+                  </span>
+                  <span v-if="day.events.length > 0" class="hidden sm:inline text-[10px] text-slate-400 font-semibold bg-slate-50 px-1 rounded">
+                    {{ day.events.length }}件
+                  </span>
+                </div>
+
+                <!-- Mobile Dot Indicators (iPhone Safari) -->
+                <div class="flex items-center justify-center space-x-1 sm:hidden mt-0.5 flex-wrap gap-0.5">
+                  <span 
+                    v-for="(ev, idx) in day.events.slice(0, 3)" 
+                    :key="'dot-' + idx"
+                    class="w-1.5 h-1.5 rounded-full"
+                    :class="ev.eventType === 'activity' ? 'bg-brand-500' : (ev.eventType === 'todo' ? 'bg-amber-500' : 'bg-emerald-500')"
+                  ></span>
+                  <span v-if="day.events.length > 3" class="text-[8px] font-bold text-slate-400 leading-none">+</span>
+                </div>
+
+                <!-- Desktop Event Badges -->
+                <div class="hidden sm:block space-y-1 overflow-y-auto max-h-[85px] flex-1">
+                  <div 
+                    v-for="ev in day.events.slice(0, 3)" 
+                    :key="ev.id + '-' + ev.eventType"
+                    :class="[
+                      ev.eventType === 'activity' ? 'bg-brand-50 text-brand-700 border-brand-200/70' : (ev.eventType === 'todo' ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200'),
+                      'px-1.5 py-0.5 rounded-md text-[10px] font-semibold border truncate block shadow-2xs'
+                    ]"
+                    :title="ev.title + ' (' + ev.userName + ')'"
+                  >
+                    <span>{{ ev.icon }}</span>
+                    <span>{{ ev.title }}</span>
+                  </div>
+                  <div v-if="day.events.length > 3" class="text-[9px] text-slate-400 font-bold pl-1">
+                    他 {{ day.events.length - 3 }} 件...
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Day Schedule Side Panel (1 col) -->
+          <div class="bg-white rounded-xl border border-slate-200/80 shadow-xs p-4 sm:p-5 flex flex-col h-full">
+            <div class="border-b border-slate-100 pb-3 mb-3 flex items-center justify-between">
+              <div>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">選択日のスケジュール</span>
+                <h3 class="text-sm font-extrabold text-slate-900 mt-0.5">{{ formatSelectedDateHeader }}</h3>
+              </div>
+              <button @click="openNewActivityForDate(selectedCalendarDate)" class="text-xs text-brand-600 hover:text-brand-700 font-bold bg-brand-50 px-2 py-1 rounded-md">＋ 追加</button>
+            </div>
+
+            <!-- Schedule Items for Selected Date -->
+            <div class="space-y-2.5 overflow-y-auto flex-1 pr-0.5">
+              <div v-for="ev in selectedDayEvents" :key="'side-' + ev.id + '-' + ev.eventType" class="p-3 rounded-xl border text-xs" :class="ev.eventType === 'activity' ? 'bg-brand-50/40 border-brand-200/60' : (ev.eventType === 'todo' ? 'bg-amber-50/50 border-amber-200' : 'bg-emerald-50/50 border-emerald-200')">
+                <div class="flex items-start justify-between">
+                  <div class="flex items-center space-x-1.5 font-bold" :class="ev.eventType === 'activity' ? 'text-brand-900' : (ev.eventType === 'todo' ? 'text-amber-900' : 'text-emerald-900')">
+                    <span>{{ ev.icon }}</span>
+                    <span>{{ ev.typeLabel }}</span>
+                  </div>
+                  <div class="flex items-center space-x-1.5">
+                    <span class="text-[10px] bg-white px-2 py-0.5 rounded-md font-bold text-slate-600 border border-slate-200 shadow-2xs">{{ ev.userName }}</span>
+                    <button @click="copyForLine(ev)" class="text-[10px] bg-white hover:bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded text-slate-600 font-bold" title="LINE等に共有">📋</button>
+                  </div>
+                </div>
+
+                <div class="mt-1.5 font-bold text-slate-900 text-xs">{{ ev.title }}</div>
+                <div v-if="ev.customerName" class="text-[11px] text-brand-600 mt-0.5 font-medium cursor-pointer hover:underline" @click="openCustomerDetailById(ev.customerId)">
+                  {{ ev.customerName }}
+                </div>
+                <p v-if="ev.details" class="text-[11px] text-slate-600 mt-1 whitespace-pre-line bg-white/80 p-2 rounded-lg border border-slate-100 leading-relaxed">{{ ev.details }}</p>
+
+                <div v-if="ev.eventType === 'todo'" class="mt-2 pt-2 border-t border-amber-200/60 flex items-center justify-between">
+                  <label class="flex items-center space-x-1.5 cursor-pointer text-[11px] font-bold text-amber-900">
+                    <input type="checkbox" :checked="ev.isCompleted" @change="toggleActivity(ev.id)" class="rounded text-amber-600">
+                    <span>{{ ev.isCompleted ? '対応完了済' : '完了にする' }}</span>
+                  </label>
+                </div>
+              </div>
+
+              <div v-if="selectedDayEvents.length === 0" class="text-center py-8 text-slate-400 text-xs">
+                この日の予定やToDoはありません。<br>
+                右上の「＋追加」から登録できます。
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 2: AGENDA TIMELINE VIEW (iPhoneで最高に見やすい直近リスト) -->
+        <div v-else class="space-y-3">
+          <div v-for="group in upcomingAgendaDays" :key="group.dateStr" class="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-xs">
+            <div class="flex items-center justify-between pb-2 mb-2.5 border-b border-slate-100">
+              <div class="flex items-center space-x-2">
+                <span class="font-extrabold text-sm" :class="group.isToday ? 'text-brand-600' : 'text-slate-900'">{{ group.dateLabel }}</span>
+                <span v-if="group.isToday" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-brand-50 text-brand-600 border border-brand-200">今日</span>
+              </div>
+              <button @click="openNewActivityForDate(group.dateStr)" class="text-xs text-brand-600 hover:underline font-bold">＋ 予定追加</button>
+            </div>
+
+            <div class="space-y-2">
+              <div v-for="ev in group.events" :key="'agenda-' + ev.id + '-' + ev.eventType" class="p-3 rounded-xl border text-xs flex items-start justify-between gap-2.5" :class="ev.eventType === 'activity' ? 'bg-brand-50/30 border-brand-200/60' : (ev.eventType === 'todo' ? 'bg-amber-50/40 border-amber-200' : 'bg-emerald-50/40 border-emerald-200')">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center space-x-2">
+                    <span class="font-bold text-[10px] px-1.5 py-0.2 rounded" :class="ev.eventType === 'activity' ? 'bg-brand-100 text-brand-800' : (ev.eventType === 'todo' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800')">
+                      {{ ev.icon }} {{ ev.typeLabel }}
+                    </span>
+                    <span class="font-bold text-slate-900 text-xs truncate cursor-pointer hover:underline text-brand-600" @click="openCustomerDetailById(ev.customerId)">{{ ev.customerName }}</span>
+                    <span class="text-[10px] text-slate-400">担当: {{ ev.userName }}</span>
+                  </div>
+                  <div class="font-bold text-slate-800 mt-1 text-xs">{{ ev.title }}</div>
+                  <p v-if="ev.details" class="text-[11px] text-slate-500 mt-0.5 line-clamp-2 leading-relaxed">{{ ev.details }}</p>
+                </div>
+
+                <div class="flex items-center space-x-1.5 flex-shrink-0" @click.stop>
+                  <button v-if="ev.eventType === 'todo'" @click="toggleActivity(ev.id)" class="px-2.5 py-1 bg-white border border-amber-300 text-amber-800 rounded-lg font-bold text-[11px] hover:bg-amber-50 cursor-pointer">
+                    {{ ev.isCompleted ? '✓ 済' : '完了' }}
+                  </button>
+                  <button @click="copyForLine(ev)" class="px-2 py-1 bg-white border border-slate-300 rounded-lg font-bold text-[11px] text-slate-600 hover:bg-slate-50 cursor-pointer" title="LINE等に共有">
+                    📋
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="upcomingAgendaDays.length === 0" class="bg-white p-8 rounded-xl text-center text-slate-400 text-xs border border-slate-200">
+            直近2週間に予定されている商談やToDoはありません。
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: CUSTOMERS MASTER -->
+      <div v-if="currentTab === 'customers'" class="max-w-7xl mx-auto space-y-3 sm:space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div>
+            <h2 class="text-base sm:text-lg font-bold text-slate-900">顧客・取引先マスター</h2>
+            <p class="text-[11px] sm:text-xs text-slate-500">取引先タップで進行中案件・過去の活動履歴を表示</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button 
+              @click="showNeglectedOnly = !showNeglectedOnly" 
+              class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1 cursor-pointer"
+              :class="showNeglectedOnly ? 'bg-amber-500 text-white shadow-xs' : 'bg-white border border-amber-300 text-amber-800 hover:bg-amber-50'"
+            >
+              <span>🕒</span>
+              <span>ご無沙汰 ({{ neglectedCustomersCount }})</span>
+            </button>
+            <button @click="showImportModal = true" class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow-xs flex items-center space-x-1 transition cursor-pointer">
+              <span>📤</span>
+              <span class="text-xs">CSV取込</span>
+            </button>
+            <a href="/api/export/customers" download class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow-xs flex items-center space-x-1 transition cursor-pointer">
+              <span>📥</span>
+              <span class="text-xs">CSV出力</span>
+            </a>
+            <button @click="openNewCustomerModal" class="bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-xs transition cursor-pointer flex items-center space-x-1">
+              <span>＋ 顧客追加</span>
+            </button>
+            <input 
+              v-model="customerSearchQuery" 
+              type="text" 
+              placeholder="企業名・業種・担当者で検索..." 
+              class="flex-1 sm:w-60 text-xs border border-slate-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:outline-none bg-white transition"
+            >
+          </div>
+        </div>
+
+        <!-- Smart Tag Filter Pills (Mobile friendly horizontal scroll) -->
+        <div class="flex items-center space-x-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
+          <button 
+            @click="selectedTagFilter = 'all'" 
+            class="px-3 py-1 rounded-full whitespace-nowrap transition cursor-pointer font-bold text-xs"
+            :class="selectedTagFilter === 'all' ? 'bg-slate-900 text-white shadow-xs' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'"
+          >
+            すべて ({{ customers.length }})
+          </button>
+          <button 
+            v-for="tag in presetTags" 
+            :key="'tag-filter-' + tag" 
+            @click="selectedTagFilter = (selectedTagFilter === tag ? 'all' : tag)" 
+            class="px-2.5 py-1 rounded-full whitespace-nowrap transition cursor-pointer font-bold text-xs flex items-center space-x-1"
+            :class="selectedTagFilter === tag ? 'bg-brand-600 text-white shadow-xs' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'"
+          >
+            <span>{{ tag }}</span>
+          </button>
+        </div>
+
+        <!-- Mobile Customer Cards (Optimized for iPhone Safari) -->
+        <div class="block md:hidden space-y-2.5">
+          <div 
+            v-for="cust in filteredCustomers" 
+            :key="'mob-' + cust.id" 
+            @click="openCustomerDetail(cust)" 
+            class="bg-white rounded-xl p-3.5 border border-slate-200/90 shadow-2xs active:bg-slate-50 transition cursor-pointer"
+          >
+            <div class="flex items-start justify-between">
+              <div>
+                <div class="flex items-center space-x-1.5 flex-wrap gap-1">
+                  <div class="font-bold text-slate-900 text-sm leading-snug">{{ cust.name }}</div>
+                  <span v-if="isCustomerNeglected(cust.id)" class="px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded text-[9px] font-bold animate-pulse">
+                    ⚠️ ご無沙汰
+                  </span>
+                  <!-- Tag badges on mobile card -->
+                  <span v-for="t in (cust.tags ? cust.tags.split(',').filter(Boolean) : [])" :key="t" class="px-1.5 py-0.2 bg-brand-50 text-brand-700 border border-brand-200 rounded text-[9px] font-bold">
+                    {{ t }}
+                  </span>
+                </div>
+                <div class="flex items-center space-x-1.5 mt-1">
+                  <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-medium">{{ cust.industry || '一般' }}</span>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold" :class="cust.status === 'active' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-slate-100 text-slate-600'">
+                    {{ cust.status === 'active' ? '稼働中' : 'リード' }}
+                  </span>
+                  <span class="font-bold text-brand-600 bg-brand-50 px-2 py-0.5 rounded text-[10px]">案件 {{ getDealsForCustomer(cust.id).length }}件</span>
+                </div>
+                <div class="text-[10px] text-slate-400 mt-1">
+                  最終接触: {{ getLastContactText(cust.id) }}
+                </div>
+              </div>
+              <button @click.stop="openCustomerDetail(cust)" class="text-xs text-brand-600 bg-brand-50 px-2.5 py-1 rounded-lg font-bold">詳細 →</button>
+            </div>
+
+            <!-- Contact Row with One-Tap Call & Email for iPhone -->
+            <div class="mt-2.5 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
+              <div class="text-slate-600 font-medium truncate max-w-[140px] text-[11px]">
+                👤 {{ cust.contact_name || '担当未設定' }}
+              </div>
+              <div class="flex items-center space-x-1.5" @click.stop>
+                <button @click="openMapForCustomer(cust)" class="flex items-center space-x-1 px-2 py-1 bg-slate-100 active:bg-slate-200 text-slate-700 rounded-lg font-bold text-xs border border-slate-200 cursor-pointer" title="マップアプリで開く">
+                  <span>🗺️</span>
+                </button>
+                <a v-if="cust.contact_phone" :href="'tel:' + cust.contact_phone" class="flex items-center space-x-1 px-2.5 py-1 bg-emerald-50 active:bg-emerald-100 text-emerald-700 rounded-lg font-bold text-xs border border-emerald-200">
+                  <span>📞</span><span>電話</span>
+                </a>
+                <a v-if="cust.contact_email" :href="'mailto:' + cust.contact_email" class="flex items-center space-x-1 px-2.5 py-1 bg-brand-50 active:bg-brand-100 text-brand-700 rounded-lg font-bold text-xs border border-brand-200">
+                  <span>✉️</span><span>メール</span>
+                </a>
+              </div>
+            </div>
+            <p v-if="cust.notes" class="text-[11px] text-slate-400 mt-2 line-clamp-1 bg-slate-50 p-1.5 rounded">{{ cust.notes }}</p>
+          </div>
+        </div>
+
+        <!-- Desktop Customer Table (Tablet & PC) -->
+        <div class="hidden md:block bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-50/70 border-b border-slate-200/80 text-slate-500 font-bold uppercase tracking-wider text-[11px]">
+                <th class="py-3.5 px-4">企業名 / 業界</th>
+                <th class="py-3.5 px-4">担当者窓口</th>
+                <th class="py-3.5 px-4">連絡先</th>
+                <th class="py-3.5 px-4 text-center">ステータス</th>
+                <th class="py-3.5 px-4 text-center">最終接触</th>
+                <th class="py-3.5 px-4 text-center">進行中案件数</th>
+                <th class="py-3.5 px-4">備考・メモ</th>
+                <th class="py-3.5 px-4 text-right">操作</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr v-for="cust in filteredCustomers" :key="cust.id" @click="openCustomerDetail(cust)" class="hover:bg-brand-50/30 transition cursor-pointer group">
+                <td class="py-3.5 px-4">
+                  <div class="font-bold text-slate-900 text-sm group-hover:text-brand-600 transition flex items-center space-x-1.5">
+                    <span>{{ cust.name }}</span>
+                    <span v-if="isCustomerNeglected(cust.id)" class="px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded text-[9px] font-bold">
+                      ⚠️ ご無沙汰
+                    </span>
+                    <span class="text-slate-300 group-hover:text-brand-500 text-xs">↗</span>
+                  </div>
+                  <div class="flex items-center space-x-1 mt-1 flex-wrap gap-1">
+                    <span class="inline-block px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-medium">{{ cust.industry || '一般' }}</span>
+                    <span v-for="t in (cust.tags ? cust.tags.split(',').filter(Boolean) : [])" :key="t" class="px-1.5 py-0.2 bg-brand-50 text-brand-700 border border-brand-200 rounded text-[9px] font-bold">
+                      {{ t }}
+                    </span>
+                  </div>
+                </td>
+                <td class="py-3.5 px-4 font-semibold text-slate-800">{{ cust.contact_name || '-' }}</td>
+                <td class="py-3.5 px-4 text-slate-600 font-mono">
+                  <div>{{ cust.contact_email || '-' }}</div>
+                  <div class="text-[11px] text-slate-400">{{ cust.contact_phone }}</div>
+                </td>
+                <td class="py-3.5 px-4 text-center">
+                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold" :class="cust.status === 'active' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-slate-100 text-slate-600'">
+                    {{ cust.status === 'active' ? '稼働中' : 'リード' }}
+                  </span>
+                </td>
+                <td class="py-3.5 px-4 text-center">
+                  <span class="text-xs font-mono" :class="isCustomerNeglected(cust.id) ? 'text-amber-700 font-bold' : 'text-slate-500'">
+                    {{ getLastContactText(cust.id) }}
+                  </span>
+                </td>
+                <td class="py-3.5 px-4 text-center">
+                  <span class="font-bold text-brand-600 bg-brand-50 px-2 py-1 rounded-md">{{ getDealsForCustomer(cust.id).length }} 件</span>
+                </td>
+                <td class="py-3.5 px-4 text-slate-500 max-w-xs truncate">{{ cust.notes || '-' }}</td>
+                <td class="py-3.5 px-4 text-right space-x-2" @click.stop>
+                  <button @click="openMapForCustomer(cust)" class="text-slate-500 hover:text-slate-800 font-bold" title="マップで探す">🗺️</button>
+                  <button @click="openEditCustomerModal(cust)" class="text-brand-600 hover:text-brand-800 font-bold">編集</button>
+                  <button @click="deleteCustomer(cust.id)" class="text-rose-500 hover:text-rose-700 font-semibold">削除</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 5: ACTIVITIES & TODOS -->
+      <div v-if="currentTab === 'activities'" class="max-w-7xl mx-auto space-y-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">営業活動履歴 & アクションToDo</h2>
+            <p class="text-xs text-slate-500">商談の議事録、コールログ、次回タスクの管理</p>
+          </div>
+          <div class="flex items-center space-x-3">
+            <label class="flex items-center space-x-1.5 text-xs text-slate-600 font-medium cursor-pointer">
+              <input type="checkbox" v-model="onlyPendingTodo" class="rounded text-brand-600 focus:ring-brand-500">
+              <span>未完了ToDoのみ表示</span>
+            </label>
+            <button @click="openNewActivityModal" class="bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow-xs transition cursor-pointer">＋ 活動を記録</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2 space-y-4">
+            <div v-for="act in filteredActivities" :key="act.id" class="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs">
+              <div class="flex items-start justify-between">
+                <div class="flex items-center space-x-3">
+                  <span class="text-2xl p-2.5 rounded-xl bg-slate-100 border border-slate-200/60">{{ getActivityIcon(act.type) }}</span>
+                  <div>
+                    <div class="flex items-center space-x-2">
+                      <h4 class="text-sm font-bold text-slate-900 cursor-pointer hover:underline text-brand-600" @click="openCustomerDetailById(act.customer_id)">{{ act.customer_name }}</h4>
+                      <span v-if="act.deal_title" class="text-xs text-slate-700 bg-slate-100 px-2 py-0.5 rounded font-medium border border-slate-200/60">{{ act.deal_title }}</span>
+                    </div>
+                    <div class="text-xs text-slate-400 mt-0.5">記録者: <span class="text-slate-600 font-semibold">{{ act.user_name }}</span> | 実施日: {{ act.activity_date || act.created_at?.slice(0, 10) }}</div>
+                  </div>
+                </div>
+                <button @click="deleteActivity(act.id)" class="text-slate-400 hover:text-rose-500 text-xs">削除</button>
+              </div>
+
+              <div class="mt-4 pl-12">
+                <h5 class="text-xs font-bold text-slate-900">{{ act.summary }}</h5>
+                <p class="text-xs text-slate-600 mt-1 whitespace-pre-line leading-relaxed">{{ act.details }}</p>
+
+                <div v-if="act.next_action" class="mt-3.5 p-3 rounded-lg border flex items-center justify-between" :class="act.is_completed ? 'bg-slate-50 border-slate-200' : 'bg-amber-50/80 border-amber-200'">
+                  <div class="flex items-center space-x-3">
+                    <input type="checkbox" :checked="act.is_completed" @change="toggleActivity(act.id)" class="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 cursor-pointer">
+                    <div>
+                      <span class="text-xs font-bold" :class="act.is_completed ? 'line-through text-slate-400' : 'text-amber-900'">
+                        次回ToDo: {{ act.next_action }}
+                      </span>
+                    </div>
+                  </div>
+                  <span class="text-xs font-semibold font-mono" :class="act.is_completed ? 'text-slate-400' : 'text-amber-700'">
+                    期日: {{ act.next_action_date || '未設定' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="filteredActivities.length === 0" class="bg-white p-8 rounded-xl text-center text-slate-400 text-xs border border-slate-200/80">
+              表示する活動記録がありません
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs h-fit">
+            <h3 class="text-sm font-bold text-slate-900 mb-1">未完了のアクションToDo</h3>
+            <p class="text-xs text-slate-400 mb-4">チェックを入れると完了状態になります</p>
+            <div class="space-y-3">
+              <div v-for="act in pendingActivities" :key="'todo-' + act.id" class="p-3 rounded-xl bg-slate-50 border border-slate-200/80 hover:border-brand-300 transition">
+                <div class="flex items-start space-x-2">
+                  <input type="checkbox" @change="toggleActivity(act.id)" class="mt-0.5 rounded text-brand-600 cursor-pointer">
+                  <div class="flex-1">
+                    <p class="text-xs font-bold text-slate-900 leading-snug">{{ act.next_action }}</p>
+                    <p class="text-[11px] text-slate-500 mt-1 cursor-pointer hover:underline text-brand-600" @click="openCustomerDetailById(act.customer_id)">{{ act.customer_name }}</p>
+                    <p class="text-[10px] font-bold text-rose-600 mt-0.5 font-mono">期日: {{ act.next_action_date || '未指定' }}</p>
+                  </div>
+                </div>
+              </div>
+              <div v-if="pendingActivities.length === 0" class="text-xs text-emerald-600 font-bold p-4 text-center bg-emerald-50 rounded-xl border border-emerald-100">
+                すべてのToDoが完了しています！🎉
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 6: TEAM MEMBERS -->
+      <div v-if="currentTab === 'team'" class="max-w-5xl mx-auto space-y-6">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900">チームメンバー</h2>
+          <p class="text-xs text-slate-500">株式会社GLOVALの営業メンバー・メールアドレス・目標管理</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div v-for="u in users" :key="u.id" class="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs relative group">
+            <button @click="openEditUserModal(u)" class="absolute top-4 right-4 text-xs text-slate-400 hover:text-brand-600 bg-slate-50 hover:bg-brand-50 px-2 py-1 rounded-md transition border border-slate-200 font-semibold">
+              編集
+            </button>
+            <div class="flex items-center space-x-3 mb-4">
+              <div :style="{ backgroundColor: u.avatar_color }" class="w-11 h-11 rounded-xl text-white font-bold flex items-center justify-center text-lg shadow-xs">
+                {{ u.name.charAt(0) }}
+              </div>
+              <div>
+                <h3 class="text-base font-bold text-slate-900">{{ u.name }}</h3>
+                <p class="text-xs text-brand-600 font-mono mt-0.5 font-medium">{{ u.email }}</p>
+              </div>
+            </div>
+            
+            <div class="space-y-2 text-xs border-t border-slate-100 pt-3">
+              <div class="flex justify-between text-slate-500">
+                <span>月次営業目標:</span>
+                <span v-if="u.target_amount > 0" class="font-extrabold text-slate-900 text-sm">¥{{ formatNumber(u.target_amount) }}</span>
+                <span v-else class="text-slate-400 italic text-xs">未設定（後で設定可）</span>
+              </div>
+              <div class="flex justify-between text-slate-500">
+                <span>現在進行中の案件:</span>
+                <span class="font-extrabold text-brand-600 text-sm">{{ getDealsForUser(u.id).length }} 件</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- MOBILE BOTTOM NAVIGATION (Optimized for iPhone Safari with Home Indicator safe area) -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/90 z-40 flex items-center justify-around px-2 pt-1.5 shadow-lg" style="padding-bottom: max(env(safe-area-inset-bottom, 0px), 10px);">
+      <button 
+        v-for="tab in tabs.slice(0, 5)" 
+        :key="tab.id"
+        @click="currentTab = tab.id"
+        :class="[
+          currentTab === tab.id ? 'text-brand-600 font-extrabold bg-brand-50/80 rounded-xl' : 'text-slate-500 font-medium',
+          'flex flex-col items-center justify-center flex-1 py-1.5 text-center transition cursor-pointer'
+        ]"
+      >
+        <span class="text-xl leading-none mb-1">{{ tab.icon }}</span>
+        <span class="text-[10px] leading-tight truncate w-full tracking-tight">{{ tab.label }}</span>
+      </button>
+    </nav>
+
+    <!-- SLIDE OVER: CUSTOMER DETAIL VIEW (Mobile Full-screen Sheet on iPhone) -->
+    <div v-if="selectedCustomer" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[100] flex items-center justify-end">
+      <div class="bg-white w-full max-w-2xl h-full shadow-2xl flex flex-col overflow-hidden animate-slide-left">
+        <!-- Top Nav Bar with Back & Close -->
+        <div class="px-4 py-2.5 border-b border-slate-200 bg-white flex items-center justify-between flex-shrink-0" style="padding-top: max(env(safe-area-inset-top, 0px), 10px);">
+          <button @click="selectedCustomer = null" class="flex items-center space-x-1 px-3 py-1.5 bg-slate-100 active:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition cursor-pointer">
+            <span>←</span><span>戻る</span>
+          </button>
+          <div class="flex items-center space-x-2">
+            <button @click="openEditCustomerModal(selectedCustomer)" class="px-3 py-1.5 bg-brand-50 active:bg-brand-100 text-brand-700 border border-brand-200 rounded-xl text-xs font-bold transition cursor-pointer">
+              編集
+            </button>
+            <button @click="selectedCustomer = null" class="p-1.5 text-slate-400 hover:text-slate-700 text-xl font-bold cursor-pointer leading-none">✕</button>
+          </div>
+        </div>
+
+        <!-- Customer Identity & 4 Big Action Buttons -->
+        <div class="p-4 bg-slate-50/80 border-b border-slate-200/80 flex-shrink-0">
+          <div class="flex items-center space-x-2 flex-wrap gap-1">
+            <h2 class="text-base sm:text-xl font-black text-slate-900 leading-tight">{{ selectedCustomer.name }}</h2>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold" :class="selectedCustomer.status === 'active' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-slate-200 text-slate-700'">
+              {{ selectedCustomer.status === 'active' ? '稼働中' : 'リード' }}
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-500 mt-1">業種: <span class="font-bold text-slate-700">{{ selectedCustomer.industry || '一般' }}</span> | 登録: {{ selectedCustomer.created_at?.slice(0, 10) }}</p>
+          
+          <!-- Tags if any -->
+          <div class="flex flex-wrap gap-1 mt-1.5" v-if="selectedCustomer.tags">
+            <span v-for="t in selectedCustomer.tags.split(',').filter(Boolean)" :key="t" class="px-2 py-0.5 bg-brand-50 text-brand-700 border border-brand-200 rounded-md text-[10px] font-bold">
+              {{ t }}
+            </span>
+          </div>
+
+          <!-- 4 Big Easy-to-Tap Quick Action Buttons (iPhone Friendly Grid) -->
+          <div class="grid grid-cols-4 gap-2 mt-3 pt-3 border-t border-slate-200">
+            <a v-if="selectedCustomer.contact_phone" :href="'tel:' + selectedCustomer.contact_phone" class="flex flex-col items-center justify-center py-2.5 px-1 rounded-xl bg-emerald-600 active:bg-emerald-700 text-white font-bold text-center shadow-xs cursor-pointer">
+              <span class="text-base">📞</span>
+              <span class="text-[10px] mt-0.5 font-bold">発信</span>
+            </a>
+            <div v-else class="flex flex-col items-center justify-center py-2.5 px-1 rounded-xl bg-slate-200/80 text-slate-400 font-bold text-center cursor-not-allowed">
+              <span class="text-base opacity-40">📞</span>
+              <span class="text-[10px] mt-0.5">電話なし</span>
+            </div>
+
+            <a v-if="selectedCustomer.contact_email" :href="'mailto:' + selectedCustomer.contact_email" class="flex flex-col items-center justify-center py-2.5 px-1 rounded-xl bg-brand-600 active:bg-brand-700 text-white font-bold text-center shadow-xs cursor-pointer">
+              <span class="text-base">✉️</span>
+              <span class="text-[10px] mt-0.5 font-bold">メール</span>
+            </a>
+            <div v-else class="flex flex-col items-center justify-center py-2.5 px-1 rounded-xl bg-slate-200/80 text-slate-400 font-bold text-center cursor-not-allowed">
+              <span class="text-base opacity-40">✉️</span>
+              <span class="text-[10px] mt-0.5">メールなし</span>
+            </div>
+
+            <button @click="openMapForCustomer(selectedCustomer)" class="flex flex-col items-center justify-center py-2.5 px-1 rounded-xl bg-white active:bg-slate-100 text-slate-800 border border-slate-300 font-bold text-center shadow-2xs cursor-pointer">
+              <span class="text-base">🗺️</span>
+              <span class="text-[10px] mt-0.5 font-bold">地図</span>
+            </button>
+
+            <button @click="exportVCard(selectedCustomer)" class="flex flex-col items-center justify-center py-2.5 px-1 rounded-xl bg-white active:bg-slate-100 text-emerald-800 border border-emerald-300 font-bold text-center shadow-2xs cursor-pointer">
+              <span class="text-base">📇</span>
+              <span class="text-[10px] mt-0.5 font-bold">電話帳へ</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Scrollable Detail Body with safe area padding at bottom -->
+        <div class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 text-xs" style="padding-bottom: max(env(safe-area-inset-bottom, 0px), 80px);">
+          <!-- Contact Detail Info -->
+          <div class="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200 shadow-2xs grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <span class="text-slate-400 block text-[11px] font-medium">窓口担当者</span>
+              <span class="font-bold text-slate-900 text-sm mt-0.5 block">👤 {{ selectedCustomer.contact_name || '-' }}</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[11px] font-medium">メールアドレス</span>
+              <span class="font-mono text-slate-700 text-xs mt-0.5 block truncate">{{ selectedCustomer.contact_email || '-' }}</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[11px] font-medium">電話番号</span>
+              <span class="font-mono text-slate-700 text-xs mt-0.5 block">{{ selectedCustomer.contact_phone || '-' }}</span>
+            </div>
+            <div class="col-span-1 sm:col-span-3 mt-1 pt-2 border-t border-slate-100" v-if="selectedCustomer.notes">
+              <span class="text-slate-400 block text-[11px] font-medium">企業備考・メモ</span>
+              <p class="text-slate-700 mt-0.5 whitespace-pre-line leading-relaxed text-xs">{{ selectedCustomer.notes }}</p>
+            </div>
+          </div>
+
+          <!-- Attachments & Business Cards (Camera friendly) -->
+          <div class="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center space-x-1.5">
+                <span class="text-sm">📸</span>
+                <span class="font-bold text-slate-900 text-xs">名刺・現場写真・添付画像 ({{ customerAttachments.length }}枚)</span>
+              </div>
+              <div>
+                <label for="custPhotoInput" class="text-xs bg-brand-50 hover:bg-brand-100 text-brand-700 font-bold px-2.5 py-1.5 rounded-lg border border-brand-200 transition cursor-pointer flex items-center space-x-1">
+                  <span>📷</span><span>撮影 / 添付</span>
+                </label>
+                <input 
+                  type="file" 
+                  id="custPhotoInput" 
+                  accept="image/*" 
+                  capture="environment" 
+                  @change="uploadCustomerImage($event, selectedCustomer.id)" 
+                  class="hidden"
+                >
+              </div>
+            </div>
+
+            <!-- Image Grid -->
+            <div v-if="customerAttachments.length > 0" class="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
+              <div v-for="att in customerAttachments" :key="'att-' + att.id" class="relative group rounded-lg overflow-hidden border border-slate-200 bg-slate-50 aspect-square">
+                <img :src="att.data_url" @click="previewImageSrc = att.data_url" class="w-full h-full object-cover cursor-pointer hover:opacity-90 transition">
+                <button @click.stop="deleteAttachment(att.id, selectedCustomer.id)" class="absolute top-1 right-1 p-1 bg-slate-900/70 hover:bg-rose-600 text-white rounded text-[10px] transition">
+                  ✕
+                </button>
+              </div>
+            </div>
+            <div v-else class="text-center py-4 bg-slate-50 rounded-lg border border-dashed border-slate-200 text-slate-400 text-[11px]">
+              名刺や現場写真、手書きメモをカメラで撮影して保存できます
+            </div>
+          </div>
+
+          <!-- Customer Deals -->
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-1.5">
+                <span>📋</span><span>商談・案件一覧</span>
+                <span class="bg-brand-50 text-brand-700 px-2 py-0.5 rounded-full text-xs font-bold">{{ customerDeals.length }}件</span>
+              </h3>
+              <button @click="openNewDealForCustomer(selectedCustomer)" class="text-xs text-brand-600 hover:text-brand-700 font-bold">＋ この顧客に案件を追加</button>
+            </div>
+
+            <div class="space-y-2">
+              <div v-for="d in customerDeals" :key="d.id" @click="openEditDealModal(d)" class="p-3.5 bg-white rounded-xl border border-slate-200/80 hover:border-brand-400 transition cursor-pointer flex items-center justify-between shadow-2xs">
+                <div>
+                  <div class="flex items-center space-x-2">
+                    <span class="font-bold text-slate-900 text-xs">{{ d.title }}</span>
+                    <span class="px-2 py-0.5 text-[10px] font-bold rounded" :class="getProbBadgeClass(d.probability)">確度 {{ d.probability }}%</span>
+                  </div>
+                  <div class="text-slate-400 text-[11px] mt-1">担当: {{ d.user_name }} | 完了予定: {{ d.expected_close_date || '-' }}</div>
+                </div>
+                <div class="text-right">
+                  <div class="font-extrabold text-sm text-slate-900">¥{{ formatNumber(d.amount) }}</div>
+                  <span class="inline-block mt-0.5 px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-[10px] font-bold">{{ getStageLabel(d.stage) }}</span>
+                </div>
+              </div>
+              <div v-if="customerDeals.length === 0" class="text-center p-6 border-2 border-dashed border-slate-200 rounded-xl text-slate-400">
+                現在登録されている案件はありません
+              </div>
+            </div>
+          </div>
+
+          <!-- Customer Activities Timeline -->
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-1.5">
+                <span>🗓️</span><span>活動・商談履歴タイムライン</span>
+              </h3>
+              <button @click="openNewActivityForCustomer(selectedCustomer)" class="text-xs text-brand-600 hover:text-brand-700 font-bold">＋ 活動メモを追加</button>
+            </div>
+
+            <div class="space-y-3">
+              <div v-for="act in customerActivities" :key="act.id" class="p-3.5 bg-white rounded-xl border border-slate-200/80 shadow-2xs">
+                <div class="flex items-center justify-between text-xs">
+                  <div class="flex items-center space-x-2">
+                    <span>{{ getActivityIcon(act.type) }}</span>
+                    <span class="font-bold text-slate-900">{{ act.summary }}</span>
+                  </div>
+                  <span class="text-slate-400 text-[11px] font-mono">{{ act.activity_date || act.created_at?.slice(0, 10) }} ({{ act.user_name }})</span>
+                </div>
+                <p class="text-slate-600 mt-1.5 whitespace-pre-line leading-relaxed">{{ act.details }}</p>
+
+                <div v-if="act.next_action" class="mt-2.5 p-2 rounded-lg bg-amber-50/80 border border-amber-200 flex items-center justify-between text-[11px]">
+                  <div class="flex items-center space-x-2">
+                    <input type="checkbox" :checked="act.is_completed" @change="toggleActivity(act.id)" class="rounded text-amber-600 cursor-pointer">
+                    <span :class="{ 'line-through text-slate-400': act.is_completed }" class="font-bold text-amber-900">次回: {{ act.next_action }}</span>
+                  </div>
+                  <span class="text-amber-700 font-mono">期日: {{ act.next_action_date || '未定' }}</span>
+                </div>
+              </div>
+              <div v-if="customerActivities.length === 0" class="text-center p-6 border-2 border-dashed border-slate-200 rounded-xl text-slate-400">
+                活動履歴はまだありません
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- MODAL: CSV IMPORT -->
+    <div v-if="showImportModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-100">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+          <h3 class="text-base font-bold text-slate-900">顧客データのCSV一括インポート</h3>
+          <button @click="showImportModal = false" class="text-slate-400 hover:text-slate-600">✕</button>
+        </div>
+
+        <div class="space-y-4 text-xs">
+          <p class="text-slate-600 leading-relaxed">
+            CSVファイルを選択するか、Excelやスプレッドシートの行をコピーして下の枠に直接貼り付けてください。
+          </p>
+
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">CSVファイルを選択</label>
+            <input type="file" accept=".csv,.txt" @change="handleFileSelect" class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer">
+          </div>
+
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">または CSVテキストを直接貼り付け</label>
+            <textarea v-model="importCsvText" rows="6" placeholder="企業名,業種,担当者名,メールアドレス,電話番号&#10;サンプル株式会社,IT,佐藤 太郎,sato@example.com,03-0000-0000" class="w-full border border-slate-300 rounded-lg p-2.5 font-mono text-[11px] focus:ring-2 focus:ring-brand-500/20 focus:outline-none"></textarea>
+          </div>
+
+          <div class="pt-3 border-t border-slate-100 flex justify-end space-x-2">
+            <button @click="showImportModal = false" type="button" class="px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 font-medium">キャンセル</button>
+            <button @click="executeImport" type="button" :disabled="!importCsvText.trim()" class="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-bold disabled:opacity-50">インポート実行</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- MODAL: LAN & REMOTE SHARING INFO (WITH QR CODE) -->
+    <div v-if="showShareModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+          <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+            <span>🌐</span><span>社内・スマホへの共有</span>
+          </h3>
+          <button @click="showShareModal = false" class="text-slate-400 hover:text-slate-600">✕</button>
+        </div>
+
+        <div class="space-y-4 text-xs text-slate-600">
+          <!-- QR Code Section -->
+          <div class="p-4 bg-gradient-to-b from-brand-50/50 to-white rounded-xl border border-brand-200/80 flex flex-col items-center justify-center text-center">
+            <span class="font-bold text-brand-950 text-xs mb-1 flex items-center space-x-1.5">
+              <span>📷</span><span>スマホカメラでかざして即アクセス</span>
+            </span>
+            <p class="text-[11px] text-slate-500 mb-3">黒川さん・奥中さん・屋木さんのスマホからそのまま読み込めます</p>
+            <div id="qrcode-box" class="bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-center min-h-[140px] min-w-[140px]"></div>
+          </div>
+
+          <!-- External / Mobile URL -->
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
+            <div class="flex items-center justify-between mb-1">
+              <span class="font-bold text-slate-800 text-xs flex items-center space-x-1.5">
+                <span>📱</span><span>外出先・スマホ用URL (Wi-Fi不要)</span>
+              </span>
+              <span class="text-[10px] bg-brand-100 text-brand-700 px-1.5 py-0.5 rounded font-bold">HTTPS 暗号化</span>
+            </div>
+            <div class="p-2 bg-white rounded-lg border border-slate-200 font-mono text-[11px] font-bold text-brand-700 flex items-center justify-between shadow-2xs">
+              <span class="truncate mr-2">{{ tunnelUrl || 'https://graduates-decreased-ultra-combine.trycloudflare.com' }}</span>
+              <button @click="copyTunnelUrl" class="text-xs font-sans bg-brand-600 hover:bg-brand-700 text-white px-2.5 py-1 rounded-md font-bold transition flex-shrink-0 cursor-pointer">{{ copyTunnelStatus || 'コピー' }}</button>
+            </div>
+          </div>
+
+          <!-- Internal LAN URL -->
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
+            <span class="font-bold text-slate-700 block mb-1">🏢 社内オフィスWi-Fi用URL:</span>
+            <div class="p-2 bg-white rounded-lg border border-slate-200 font-mono text-[11px] font-bold text-slate-800 flex items-center justify-between shadow-2xs">
+              <span>http://192.168.128.73:8088/</span>
+              <button @click="copyShareUrl" class="text-xs font-sans bg-white border border-slate-300 hover:bg-slate-50 px-2 py-1 rounded-md text-slate-700 font-semibold cursor-pointer">{{ copyStatus || 'コピー' }}</button>
+            </div>
+          </div>
+
+          <div class="p-2.5 bg-slate-100/70 rounded-lg border border-slate-200 text-[11px] text-slate-500 leading-relaxed">
+            💡 <strong>ワンクリック起動:</strong> <code>start_crm.command</code> を開くと、Macのスリープ防止(caffeinate)と外部トンネルが同時に自動起動します。
+          </div>
+        </div>
+
+        <div class="mt-5 pt-3 border-t border-slate-100 flex justify-end">
+          <button @click="showShareModal = false" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg font-bold text-xs">閉じる</button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- MODAL: SETTINGS & DATA MANAGEMENT -->
+    <div v-if="showSettingsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+          <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+            <span>⚙️</span><span>システム設定・データ管理</span>
+          </h3>
+          <button @click="showSettingsModal = false" class="text-slate-400 hover:text-slate-600">✕</button>
+        </div>
+
+        <div class="space-y-4 text-xs">
+          <!-- Password Change -->
+          <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80">
+            <div class="font-bold text-slate-800 mb-2 flex items-center space-x-1.5">
+              <span>🔐</span><span>合言葉（アクセスパスワード）の変更</span>
+            </div>
+            <div class="space-y-2">
+              <input v-model="pwdChangeForm.old_password" type="password" placeholder="現在の合言葉 (初期値: gloval)" class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs">
+              <input v-model="pwdChangeForm.new_password" type="password" placeholder="新しい合言葉（4文字以上）" class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs">
+              <div v-if="pwdChangeError" class="text-[11px] text-rose-600 font-bold">{{ pwdChangeError }}</div>
+              <button @click="handleChangePassword" class="w-full py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg font-bold transition">合言葉を変更する</button>
+            </div>
+          </div>
+
+          <!-- Backup Download -->
+          <div class="p-3.5 bg-emerald-50/70 rounded-xl border border-emerald-200/80 flex items-center justify-between">
+            <div>
+              <div class="font-bold text-emerald-950 flex items-center space-x-1.5">
+                <span>💾</span><span>データ即時バックアップ</span>
+              </div>
+              <p class="text-[11px] text-emerald-700 mt-0.5">全データが入ったSQLite DBをダウンロード</p>
+            </div>
+            <button @click="downloadBackup" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition text-xs flex-shrink-0 cursor-pointer">
+              保存 (.db)
+            </button>
+          </div>
+
+          <!-- Production Start (Clear Demo) -->
+          <div class="p-3.5 bg-indigo-50/70 rounded-xl border border-indigo-200/80">
+            <div class="font-bold text-indigo-950 flex items-center space-x-1.5 mb-1">
+              <span>🚀</span><span>本番運用の開始（デモデータ消去）</span>
+            </div>
+            <p class="text-[11px] text-indigo-700 mb-2">3名のメンバーアカウントはそのまま残し、サンプルの案件・顧客・活動のみを全消去します（自動バックアップ付き）。</p>
+            <button @click="clearDemoData" class="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition text-xs cursor-pointer">
+              デモデータを消去して本番スタート
+            </button>
+          </div>
+
+          <!-- Reset to Demo -->
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between">
+            <div>
+              <span class="font-bold text-slate-700 block text-xs">デモデータの初期リセット</span>
+              <span class="text-[10px] text-slate-400">初期サンプルデータを再投入します</span>
+            </div>
+            <button @click="resetDemoData" class="px-2.5 py-1 text-slate-600 hover:text-rose-600 border border-slate-300 rounded hover:border-rose-300 bg-white font-medium text-xs">
+              初期化
+            </button>
+          </div>
+
+          <!-- Logout -->
+          <div class="pt-2 border-t border-slate-100 flex justify-between items-center">
+            <button @click="logout" class="text-rose-600 hover:underline font-bold text-xs">🚪 この端末からログアウト</button>
+            <button @click="showSettingsModal = false" class="px-3.5 py-1.5 bg-slate-200 text-slate-700 rounded-lg font-bold text-xs">閉じる</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- MODAL: USER EDIT -->
+    <div v-if="userModalOpen" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-100">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+          <h3 class="text-base font-bold text-slate-900">メンバー情報の編集</h3>
+          <button @click="userModalOpen = false" class="text-slate-400 hover:text-slate-600">✕</button>
+        </div>
+
+        <form @submit.prevent="saveUser" class="space-y-4 text-xs">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">氏名 *</label>
+            <input v-model="userForm.name" type="text" required class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500/20 focus:outline-none">
+          </div>
+
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">メールアドレス *</label>
+            <input v-model="userForm.email" type="email" required placeholder="name@gloval.com" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500/20 focus:outline-none font-mono">
+            <p class="text-[11px] text-slate-400 mt-1">※ @gloval.com アドレス</p>
+          </div>
+
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">月次営業目標 (円) *</label>
+            <input v-model.number="userForm.target_amount" type="number" step="100000" min="0" placeholder="0で未設定" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500/20 focus:outline-none font-mono">
+            <p class="text-[11px] text-slate-400 mt-1">※ 0のときは「未設定」として表示されます</p>
+          </div>
+
+          <div class="pt-3 border-t border-slate-100 flex justify-end space-x-2">
+            <button @click="userModalOpen = false" type="button" class="px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 font-medium">キャンセル</button>
+            <button type="submit" class="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-bold">更新する</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL: DEAL CREATE / EDIT -->
+    <div v-if="dealModalOpen" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+          <h3 class="text-base font-bold text-slate-900">{{ editingDealId ? '案件の編集' : '新規案件の登録' }}</h3>
+          <button @click="dealModalOpen = false" class="text-slate-400 hover:text-slate-600">✕</button>
+        </div>
+
+        <form @submit.prevent="saveDeal" class="space-y-4 text-xs">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">案件名 *</label>
+            <input v-model="dealForm.title" type="text" required placeholder="例: クラウド基幹システム導入支援" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500/20 focus:outline-none">
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">取引先企業 *</label>
+              <select v-model="dealForm.customer_id" required class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500/20 focus:outline-none bg-white">
+                <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.name }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">営業担当者 *</label>
+              <select v-model="dealForm.user_id" required class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500/20 focus:outline-none bg-white">
+                <option v-for="u in users" :key="u.id" :value="u.id">{{ u.name }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">想定金額 (円) *</label>
+              <input v-model.number="dealForm.amount" type="number" step="10000" min="0" required class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500/20 focus:outline-none font-mono font-bold">
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">完了予定日</label>
+              <input v-model="dealForm.expected_close_date" type="date" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500/20 focus:outline-none font-mono">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">商談フェーズ</label>
+              <select v-model="dealForm.stage" @change="onStageChangeInModal" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500/20 focus:outline-none bg-white font-bold">
+                <option v-for="s in stages" :key="s.id" :value="s.id">{{ s.label }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">受注確度 (%)</label>
+              <input v-model.number="dealForm.probability" type="number" min="0" max="100" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500/20 focus:outline-none font-mono">
+            </div>
+          </div>
+
+          <div v-if="dealForm.stage === 'lost'">
+            <label class="block font-bold text-rose-700 mb-1">失注理由 (分析に反映されます)</label>
+            <div class="flex flex-wrap gap-1 mb-2">
+              <button 
+                v-for="r in lostReasonPresets" 
+                :key="'lost-preset-' + r" 
+                type="button" 
+                @click="dealForm.lost_reason = r"
+                class="px-2 py-1 rounded-md text-[10px] font-bold border transition cursor-pointer"
+                :class="dealForm.lost_reason === r ? 'bg-rose-600 text-white border-rose-600' : 'bg-rose-50 text-rose-800 border-rose-200 hover:bg-rose-100'"
+              >
+                {{ r }}
+              </button>
+            </div>
+            <input v-model="dealForm.lost_reason" type="text" placeholder="理由を入力または上から選択" class="w-full border border-rose-300 bg-rose-50/40 rounded-lg p-2.5 focus:ring-2 focus:ring-rose-500/20 focus:outline-none">
+          </div>
+
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">案件メモ・補足</label>
+            <textarea v-model="dealForm.notes" rows="2" placeholder="予算感、意思決定者、競合状況など" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500/20 focus:outline-none leading-relaxed"></textarea>
+          </div>
+
+          <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <button v-if="editingDealId" @click="deleteDeal(editingDealId)" type="button" class="text-rose-600 hover:text-rose-800 font-bold">削除</button>
+              <button type="button" @click="openQuotationModal(dealForm)" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-xs flex items-center space-x-1 cursor-pointer transition">
+                <span>📄</span><span>見積書発行</span>
+              </button>
+            </div>
+            <div class="flex space-x-2 ml-auto">
+              <button @click="dealModalOpen = false" type="button" class="px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 font-medium">キャンセル</button>
+              <button type="submit" class="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-bold">保存する</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL: CUSTOMER CREATE / EDIT -->
+    <div v-if="customerModalOpen" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+          <h3 class="text-base font-bold text-slate-900">{{ editingCustomerId ? '取引先の編集' : '新規取引先の登録' }}</h3>
+          <button @click="customerModalOpen = false" class="text-slate-400 hover:text-slate-600">✕</button>
+        </div>
+
+        <form @submit.prevent="saveCustomer" class="space-y-4 text-xs">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">企業名 / 屋号 *</label>
+            <input v-model="customerForm.name" type="text" required placeholder="例: 株式会社サンプル" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500/20 focus:outline-none">
+          </div>
+
+          <!-- Smart Tags Selection -->
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">タグ / ラベル (複数選択可)</label>
+            <div class="flex flex-wrap gap-1.5">
+              <button 
+                v-for="t in presetTags" 
+                :key="'form-tag-' + t" 
+                type="button" 
+                @click="toggleCustomerTag(t)"
+                class="px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer"
+                :class="(customerForm.tags && customerForm.tags.includes(t)) ? 'bg-brand-600 text-white border-brand-600 shadow-xs' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'"
+              >
+                {{ t }}
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">業種</label>
+              <input v-model="customerForm.industry" type="text" placeholder="例: IT・通信" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500/20 focus:outline-none">
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">ステータス</label>
+              <select v-model="customerForm.status" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500/20 focus:outline-none bg-white font-medium">
+                <option value="lead">リード（見込み）</option>
+                <option value="active">アクティブ（稼働中）</option>
+                <option value="churned">休眠・解約</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">担当者名</label>
+              <input v-model="customerForm.contact_name" type="text" placeholder="例: 山田 太郎 様" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500/20 focus:outline-none">
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">電話番号</label>
+              <input v-model="customerForm.contact_phone" type="text" placeholder="03-0000-0000" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500/20 focus:outline-none font-mono">
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">メールアドレス</label>
+            <input v-model="customerForm.contact_email" type="email" placeholder="contact@example.co.jp" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500/20 focus:outline-none font-mono">
+          </div>
+
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">特記事項・会社概要</label>
+            <textarea v-model="customerForm.notes" rows="2" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500/20 focus:outline-none leading-relaxed"></textarea>
+          </div>
+
+          <div class="pt-3 border-t border-slate-100 flex justify-end space-x-2">
+            <button @click="customerModalOpen = false" type="button" class="px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 font-medium">キャンセル</button>
+            <button type="submit" class="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-bold">保存する</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL: ACTIVITY CREATE -->
+    <div v-if="activityModalOpen" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-100">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+          <h3 class="text-base font-bold text-slate-900">予定・営業活動の登録</h3>
+          <button @click="activityModalOpen = false" class="text-slate-400 hover:text-slate-600">✕</button>
+        </div>
+
+        <form @submit.prevent="saveActivity" class="space-y-4 text-xs">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">予定日 / 実施日 *</label>
+              <input v-model="activityForm.activity_date" type="date" required class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500/20 focus:outline-none bg-white font-mono">
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">活動種別 *</label>
+              <select v-model="activityForm.type" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500/20 focus:outline-none bg-white font-semibold">
+                <option value="meeting">💻 Web商談・会議</option>
+                <option value="visit">🚶 訪問・対面</option>
+                <option value="call">📞 電話連絡</option>
+                <option value="email">✉️ メール連絡</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">取引先 *</label>
+              <select v-model="activityForm.customer_id" required class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500/20 focus:outline-none bg-white font-medium">
+                <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.name }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">関連案件 (任意)</label>
+              <select v-model="activityForm.deal_id" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500/20 focus:outline-none bg-white font-medium">
+                <option :value="null">案件なし</option>
+                <option v-for="d in customerDealsForActivity" :key="d.id" :value="d.id">{{ d.title }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">担当者</label>
+            <select v-model="activityForm.user_id" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500/20 focus:outline-none bg-white font-medium">
+              <option v-for="u in users" :key="u.id" :value="u.id">{{ u.name }}</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">件名 / アジェンダ *</label>
+            <input v-model="activityForm.summary" type="text" required placeholder="例: 提案書の説明と概算見積の提示" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500/20 focus:outline-none">
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block font-bold text-slate-700">商談詳細・議事録・メモ</label>
+              <button 
+                type="button" 
+                @click="toggleSpeechRecognition" 
+                :class="[
+                  isRecordingSpeech ? 'bg-rose-500 text-white animate-pulse' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200',
+                  'px-2.5 py-1 rounded-lg text-xs font-bold flex items-center space-x-1 cursor-pointer transition'
+                ]"
+              >
+                <span>{{ isRecordingSpeech ? '⏹ 音声認識中...' : '🎙️ 音声入力' }}</span>
+              </button>
+            </div>
+            <textarea v-model="activityForm.details" rows="3" placeholder="アジェンダ、先方の懸念点、質疑応答など（右上のマイクを押して話すだけで自動文字起こし入力可能）" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500/20 focus:outline-none leading-relaxed"></textarea>
+          </div>
+
+          <!-- Feel Badges (Quick Stamps) -->
+          <div>
+            <span class="block font-bold text-slate-700 mb-1 text-xs">商談の感触 (ワンタップでメモに追加):</span>
+            <div class="flex flex-wrap gap-1.5">
+              <button type="button" @click="appendFeel('【感触: 🔥 非常に好感触】')" class="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg text-xs font-bold text-amber-900 cursor-pointer">🔥 好感触</button>
+              <button type="button" @click="appendFeel('【感触: 👍 順調】')" class="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg text-xs font-bold text-blue-900 cursor-pointer">👍 順調</button>
+              <button type="button" @click="appendFeel('【感触: 😐 検討・保留】')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 cursor-pointer">😐 保留</button>
+              <button type="button" @click="appendFeel('【感触: ⚠️ 懸念・難航】')" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg text-xs font-bold text-rose-900 cursor-pointer">⚠️ 難航</button>
+            </div>
+          </div>
+
+          <div class="p-3 bg-amber-50/70 rounded-xl border border-amber-200/80 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-amber-900 block text-[11px]">次回アクション (ToDo)</span>
+              <span class="text-[10px] text-amber-700 font-semibold">ワンタップ定型入力↓</span>
+            </div>
+            <!-- Preset chips -->
+            <div class="flex flex-wrap gap-1 mb-1">
+              <button type="button" @click="setNextActionPreset('修正版見積書の作成・送付', 2)" class="px-2 py-0.5 bg-white border border-amber-300 text-amber-900 rounded text-[10px] font-semibold hover:bg-amber-100 cursor-pointer">📄 見積送付 (+2日)</button>
+              <button type="button" @click="setNextActionPreset('日程再調整・次回打合せの確認', 3)" class="px-2 py-0.5 bg-white border border-amber-300 text-amber-900 rounded text-[10px] font-semibold hover:bg-amber-100 cursor-pointer">📅 日程調整 (+3日)</button>
+              <button type="button" @click="setNextActionPreset('検討状況・社内稟議のフォロー電話', 7)" class="px-2 py-0.5 bg-white border border-amber-300 text-amber-900 rounded text-[10px] font-semibold hover:bg-amber-100 cursor-pointer">📞 検討フォロー (+7日)</button>
+              <button type="button" @click="setNextActionPreset('契約書ドラフトの送付・締結準備', 5)" class="px-2 py-0.5 bg-white border border-amber-300 text-amber-900 rounded text-[10px] font-semibold hover:bg-amber-100 cursor-pointer">✍️ 契約準備 (+5日)</button>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <div class="col-span-2">
+                <input v-model="activityForm.next_action" type="text" placeholder="例: 修正版見積書の送付" class="w-full border border-amber-200 rounded-lg p-2 focus:outline-none bg-white text-xs">
+              </div>
+              <div>
+                <input v-model="activityForm.next_action_date" type="date" class="w-full border border-amber-200 rounded-lg p-2 focus:outline-none bg-white font-mono text-xs">
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-slate-100 flex justify-end space-x-2">
+            <button @click="activityModalOpen = false" type="button" class="px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 font-medium">キャンセル</button>
+            <button type="submit" class="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-bold">保存する</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- QUOTATION (ESTIMATE) PREVIEW & PRINT MODAL -->
+    <div v-if="showQuoteModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto no-print">
+      <div class="bg-white rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl my-auto border border-slate-200">
+        <!-- Modal Action Header (Hidden when printing) -->
+        <div class="px-4 py-3 bg-slate-900 text-white flex items-center justify-between no-print">
+          <div class="flex items-center space-x-2">
+            <span class="text-amber-400 text-base">📄</span>
+            <span class="font-bold text-sm">御見積書 プレビュー / PDF・印刷</span>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button @click="copyQuotationSummary" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-bold transition flex items-center space-x-1 cursor-pointer">
+              <span>📋</span><span>テキスト共有コピー</span>
+            </button>
+            <button @click="printQuotation" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center space-x-1 cursor-pointer">
+              <span>🖨️</span><span>印刷 / PDF出力</span>
+            </button>
+            <button @click="showQuoteModal = false" class="text-slate-400 hover:text-white p-1 ml-2 text-lg">✕</button>
+          </div>
+        </div>
+
+        <!-- Printable Document Area -->
+        <div id="quotation-print-area" class="p-6 sm:p-10 bg-white text-slate-800 text-xs font-sans print-area max-h-[80vh] overflow-y-auto">
+          <!-- Quotation Header -->
+          <div class="flex justify-between items-start pb-6 border-b-2 border-slate-900">
+            <div>
+              <h1 class="text-2xl font-black text-slate-900 tracking-wider">御 見 積 書</h1>
+              <p class="text-[11px] text-slate-500 font-mono mt-1">QUOTATION</p>
+              
+              <div class="mt-6">
+                <div class="text-base font-bold text-slate-900 border-b-2 border-slate-800 pb-1">
+                  {{ quoteDeal?.customer_name }} <span class="text-xs font-normal">御中</span>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-2">下記のとおり御見積申し上げます。</p>
+              </div>
+            </div>
+
+            <div class="text-right text-[11px] space-y-1">
+              <div class="font-mono text-slate-500">見積番号: GLO-{{ getQuotationNumber(quoteDeal) }}</div>
+              <div class="font-mono text-slate-500">発行日: {{ getTodayDate() }}</div>
+              <div class="font-mono text-slate-500">有効期限: 発行日より30日間</div>
+              
+              <div class="mt-4 pt-2 border-t border-slate-200 text-left sm:text-right">
+                <div class="font-black text-slate-900 text-sm">株式会社GLOVAL</div>
+                <div class="text-slate-600">営業担当: {{ quoteDeal?.user_name || '担当者' }}</div>
+                <div class="text-slate-500 font-mono text-[10px]">{{ getUserEmail(quoteDeal?.user_id) }}</div>
+                <div class="text-[10px] text-slate-400 mt-1">※角印省略</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Total Amount Highlight Box -->
+          <div class="my-6 p-4 rounded-xl bg-slate-50 border-2 border-brand-500 flex items-center justify-between">
+            <div class="font-bold text-slate-700 text-sm">御見積総額 (税込)</div>
+            <div class="text-2xl font-black text-brand-700 font-mono">
+              ¥{{ formatNumber(Math.round((quoteDeal?.amount || 0) * 1.1)) }} -
+            </div>
+          </div>
+
+          <!-- Item Table -->
+          <table class="w-full text-left border-collapse my-6">
+            <thead>
+              <tr class="bg-slate-100 text-slate-700 border-y border-slate-300">
+                <th class="py-2.5 px-3 font-bold text-xs">件名 / 項目名</th>
+                <th class="py-2.5 px-3 font-bold text-xs text-center w-20">数量</th>
+                <th class="py-2.5 px-3 font-bold text-xs text-right w-32">単価 (税抜)</th>
+                <th class="py-2.5 px-3 font-bold text-xs text-right w-36">金額 (税抜)</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200">
+              <tr>
+                <td class="py-3 px-3">
+                  <div class="font-bold text-slate-900 text-xs">{{ quoteDeal?.title }}</div>
+                  <div class="text-slate-500 text-[11px] mt-0.5">{{ quoteDeal?.notes || '業務支援・コンサルティング一式' }}</div>
+                </td>
+                <td class="py-3 px-3 text-center font-mono">1</td>
+                <td class="py-3 px-3 text-right font-mono">¥{{ formatNumber(quoteDeal?.amount) }}</td>
+                <td class="py-3 px-3 text-right font-mono font-bold">¥{{ formatNumber(quoteDeal?.amount) }}</td>
+              </tr>
+              <!-- Empty spacer rows for paper-like look -->
+              <tr>
+                <td class="py-4 px-3 text-slate-300">（以下余白）</td>
+                <td></td>
+                <td></td>
+                <td></td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="border-t-2 border-slate-300">
+                <td colspan="2" class="py-2 px-3"></td>
+                <td class="py-2 px-3 text-right font-semibold text-slate-600">小計 (税抜):</td>
+                <td class="py-2 px-3 text-right font-mono font-bold text-slate-800">¥{{ formatNumber(quoteDeal?.amount) }}</td>
+              </tr>
+              <tr>
+                <td colspan="2" class="py-1.5 px-3"></td>
+                <td class="py-1.5 px-3 text-right text-slate-500">消費税等 (10%):</td>
+                <td class="py-1.5 px-3 text-right font-mono text-slate-600">¥{{ formatNumber(Math.round((quoteDeal?.amount || 0) * 0.1)) }}</td>
+              </tr>
+              <tr class="border-t border-slate-900 bg-slate-50">
+                <td colspan="2" class="py-2 px-3 font-bold text-slate-900">合計金額 (税込):</td>
+                <td colspan="2" class="py-2 px-3 text-right font-black font-mono text-brand-700 text-base">
+                  ¥{{ formatNumber(Math.round((quoteDeal?.amount || 0) * 1.1)) }}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+
+          <!-- Notes / Terms -->
+          <div class="mt-8 pt-4 border-t border-slate-200 text-[11px] text-slate-500 space-y-1">
+            <div class="font-bold text-slate-700">【お取引条件・備考】</div>
+            <div>・お支払い条件: 月末締め 翌月末銀行振込（お振込手数料は貴社にてご負担願います）</div>
+            <div>・本見積書の有効期限は発行日より30日間とさせていただきます。</div>
+            <div>・ご不明点・ご調整のご要望がございましたら担当までお気軽にお申し付けください。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- IMAGE FULLSCREEN PREVIEW MODAL -->
+    <div v-if="previewImageSrc" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[100] flex items-center justify-center p-3 sm:p-6 cursor-pointer" @click="previewImageSrc = null">
+      <div class="relative max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl shadow-2xl bg-black flex items-center justify-center">
+        <img :src="previewImageSrc" class="max-w-full max-h-[85vh] object-contain">
+        <button class="absolute top-3 right-3 text-white text-base font-bold bg-slate-800/80 hover:bg-slate-700 w-8 h-8 rounded-full flex items-center justify-center leading-none">✕</button>
+      </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div v-if="toastMessage" class="fixed bottom-6 right-6 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-3 text-xs z-50 animate-bounce">
+      <span class="text-emerald-400 font-bold">✓</span>
+      <span>{{ toastMessage }}</span>
+    </div>
+
+  </div>
+
+  <script>
+    const { createApp, ref, computed, onMounted, nextTick, watch } = Vue;
+
+    createApp({
+      setup() {
+        const users = ref([]);
+        const customers = ref([]);
+        const deals = ref([]);
+        const activities = ref([]);
+        const stages = ref([]);
+        const analytics = ref({});
+        
+        const currentTab = ref('dashboard');
+        const currentUserId = ref(1);
+        const filterUserId = ref(null);
+        const mobilePipelineStage = ref('all');
+        const globalSearchQuery = ref('');
+        const customerSearchQuery = ref('');
+        const onlyPendingTodo = ref(false);
+        const toastMessage = ref('');
+
+        // Calendar States
+        const todayObj = new Date();
+        const calendarYear = ref(todayObj.getFullYear());
+        const calendarMonth = ref(todayObj.getMonth());
+        const selectedCalendarDate = ref(todayObj.toISOString().slice(0, 10));
+        const calendarViewMode = ref('month'); // 'month' or 'agenda'
+
+        // Modals & Slide-overs
+        const showShareModal = ref(false);
+        const copyStatus = ref('');
+        const tunnelUrl = ref('https://graduates-decreased-ultra-combine.trycloudflare.com');
+        const copyTunnelStatus = ref('');
+        const selectedCustomer = ref(null);
+
+        // Security & Authentication & Management
+        const isAuthenticated = ref(!!(localStorage.getItem('gloval_token') || sessionStorage.getItem('gloval_token')));
+        const loginPassword = ref('');
+        const loginError = ref('');
+        const rememberMe = ref(true);
+        const showSettingsModal = ref(false);
+        const pwdChangeForm = ref({ old_password: '', new_password: '' });
+        const pwdChangeError = ref('');
+
+        const showImportModal = ref(false);
+        const importCsvText = ref('');
+
+        const userModalOpen = ref(false);
+        const userForm = ref({ id: null, name: '', email: '', target_amount: 0 });
+
+        const dealModalOpen = ref(false);
+        const editingDealId = ref(null);
+        const dealForm = ref({
+          title: '', customer_id: null, user_id: 1, amount: 1000000,
+          stage: 'lead', probability: 10, expected_close_date: '', lost_reason: '', notes: '', tags: ''
+        });
+
+        const customerModalOpen = ref(false);
+        const editingCustomerId = ref(null);
+        const customerForm = ref({
+          name: '', industry: '', contact_name: '', contact_email: '', contact_phone: '', status: 'active', notes: '', tags: ''
+        });
+
+        const activityModalOpen = ref(false);
+        const activityForm = ref({
+          customer_id: null, deal_id: null, user_id: 1, type: 'meeting', activity_date: '', summary: '', details: '', next_action: '', next_action_date: ''
+        });
+
+        const tabs = computed(() => [
+          { id: 'dashboard', label: 'ダッシュボード', icon: '📊' },
+          { id: 'pipeline', label: 'パイプライン', icon: '📋', badge: deals.value.length },
+          { id: 'calendar', label: '営業カレンダー', icon: '📅' },
+          { id: 'customers', label: '顧客マスター', icon: '🏢', badge: customers.value.length },
+          { id: 'activities', label: '活動履歴 & ToDo', icon: '🗓️', badge: pendingActivitiesCount.value },
+          { id: 'team', label: 'チームメンバー', icon: '👥' },
+        ]);
+
+        const currentUser = computed(() => users.value.find(u => u.id === currentUserId.value));
+
+        const showToast = (msg) => {
+          toastMessage.value = msg;
+          setTimeout(() => { toastMessage.value = ''; }, 2500);
+        };
+
+        const activeDealsCount = computed(() => {
+          return deals.value.filter(d => d.stage !== 'won' && d.stage !== 'lost').length;
+        });
+
+        const averageProbability = computed(() => {
+          const active = deals.value.filter(d => d.stage !== 'won' && d.stage !== 'lost');
+          if (active.length === 0) return 0;
+          const sum = active.reduce((acc, d) => acc + (d.probability || 0), 0);
+          return Math.round(sum / active.length);
+        });
+
+        const averageWonDealAmount = computed(() => {
+          const won = deals.value.filter(d => d.stage === 'won');
+          if (won.length === 0) return 0;
+          const sum = won.reduce((acc, d) => acc + (d.amount || 0), 0);
+          return Math.round(sum / won.length);
+        });
+
+        const nextPendingDate = computed(() => {
+          const list = pendingActivities.value.map(a => a.next_action_date).filter(Boolean).sort();
+          return list.length > 0 ? list[0] : null;
+        });
+
+        const filteredDeals = computed(() => {
+          let list = deals.value;
+          if (filterUserId.value) {
+            list = list.filter(d => d.user_id === filterUserId.value);
+          }
+          if (globalSearchQuery.value.trim()) {
+            const q = globalSearchQuery.value.toLowerCase();
+            list = list.filter(d => 
+              d.title.toLowerCase().includes(q) || 
+              (d.customer_name && d.customer_name.toLowerCase().includes(q)) ||
+              (d.user_name && d.user_name.toLowerCase().includes(q))
+            );
+          }
+          return list;
+        });
+
+        const filteredDealsTotal = computed(() => {
+          return filteredDeals.value.reduce((acc, d) => acc + (d.amount || 0), 0);
+        });
+
+        const showNeglectedOnly = ref(false);
+
+        const getCustomerLastActivityDate = (customerId) => {
+          const custActs = activities.value.filter(a => a.customer_id === customerId);
+          if (custActs.length === 0) return null;
+          const dates = custActs.map(a => a.activity_date || (a.created_at ? a.created_at.slice(0, 10) : null)).filter(Boolean);
+          if (dates.length === 0) return null;
+          dates.sort().reverse();
+          return dates[0];
+        };
+
+        const isCustomerNeglected = (customerId) => {
+          const lastDate = getCustomerLastActivityDate(customerId);
+          if (!lastDate) return true; // 接触歴なしも要注意
+          const diffDays = Math.floor((new Date() - new Date(lastDate)) / (1000 * 60 * 60 * 24));
+          return diffDays >= 30;
+        };
+
+        const getLastContactText = (customerId) => {
+          const lastDate = getCustomerLastActivityDate(customerId);
+          if (!lastDate) return '接触履歴なし';
+          const diffDays = Math.floor((new Date() - new Date(lastDate)) / (1000 * 60 * 60 * 24));
+          if (diffDays === 0) return '本日';
+          if (diffDays === 1) return '昨日';
+          return `${diffDays}日前`;
+        };
+
+        const neglectedCustomersCount = computed(() => {
+          return customers.value.filter(c => isCustomerNeglected(c.id)).length;
+        });
+
+        // Smart Tags
+        const presetTags = ['⭐ VIP', '🌱 新規', '🤝 紹介', '🏢 大手', '🔥 最重要'];
+        const selectedTagFilter = ref('all');
+
+        const filteredCustomers = computed(() => {
+          let list = customers.value;
+          if (showNeglectedOnly.value) {
+            list = list.filter(c => isCustomerNeglected(c.id));
+          }
+          if (selectedTagFilter.value !== 'all') {
+            list = list.filter(c => c.tags && c.tags.includes(selectedTagFilter.value));
+          }
+          const q = (globalSearchQuery.value.trim() || customerSearchQuery.value.trim()).toLowerCase();
+          if (q) {
+            list = list.filter(c => 
+              c.name.toLowerCase().includes(q) || 
+              (c.industry && c.industry.toLowerCase().includes(q)) ||
+              (c.contact_name && c.contact_name.toLowerCase().includes(q)) ||
+              (c.tags && c.tags.toLowerCase().includes(q)) ||
+              (c.notes && c.notes.toLowerCase().includes(q))
+            );
+          }
+          return list;
+        });
+
+        const filteredActivities = computed(() => {
+          let list = activities.value;
+          if (onlyPendingTodo.value) {
+            list = list.filter(a => a.next_action && !a.is_completed);
+          }
+          if (filterUserId.value) {
+            list = list.filter(a => a.user_id === filterUserId.value);
+          }
+          if (globalSearchQuery.value.trim()) {
+            const q = globalSearchQuery.value.toLowerCase();
+            list = list.filter(a => 
+              a.summary.toLowerCase().includes(q) ||
+              (a.details && a.details.toLowerCase().includes(q)) ||
+              (a.customer_name && a.customer_name.toLowerCase().includes(q))
+            );
+          }
+          return list;
+        });
+
+        const pendingActivities = computed(() => {
+          return activities.value.filter(a => a.next_action && !a.is_completed);
+        });
+
+        const pendingActivitiesCount = computed(() => pendingActivities.value.length);
+
+        const customerDealsForActivity = computed(() => {
+          if (!activityForm.value.customer_id) return [];
+          return deals.value.filter(d => d.customer_id === activityForm.value.customer_id);
+        });
+
+        const customerDeals = computed(() => {
+          if (!selectedCustomer.value) return [];
+          return deals.value.filter(d => d.customer_id === selectedCustomer.value.id);
+        });
+
+        const customerActivities = computed(() => {
+          if (!selectedCustomer.value) return [];
+          return activities.value.filter(a => a.customer_id === selectedCustomer.value.id);
+        });
+
+        // CALENDAR
+        const calendarEvents = computed(() => {
+          const events = [];
+          const currentFilter = filterUserId.value;
+
+          activities.value.forEach(a => {
+            if (currentFilter && a.user_id !== currentFilter) return;
+            const dateStr = a.activity_date || (a.created_at ? a.created_at.slice(0, 10) : null);
+            if (dateStr) {
+              const iconMap = { 'meeting': '💻', 'visit': '🚶', 'call': '📞', 'email': '✉️' };
+              const typeNameMap = { 'meeting': 'Web商談', 'visit': '訪問', 'call': '架電', 'email': 'メール' };
+              events.push({
+                id: a.id,
+                date: dateStr,
+                eventType: 'activity',
+                typeLabel: typeNameMap[a.type] || '活動',
+                icon: iconMap[a.type] || '📝',
+                title: a.summary,
+                details: a.details,
+                customerName: a.customer_name,
+                customerId: a.customer_id,
+                userName: a.user_name,
+                userId: a.user_id,
+                isCompleted: false
+              });
+            }
+
+            if (a.next_action && a.next_action_date) {
+              events.push({
+                id: a.id,
+                date: a.next_action_date,
+                eventType: 'todo',
+                typeLabel: 'ToDo期日',
+                icon: '⚠️',
+                title: a.next_action,
+                details: a.summary ? '関連商談: ' + a.summary : '',
+                customerName: a.customer_name,
+                customerId: a.customer_id,
+                userName: a.user_name,
+                userId: a.user_id,
+                isCompleted: !!a.is_completed
+              });
+            }
+          });
+
+          deals.value.forEach(d => {
+            if (currentFilter && d.user_id !== currentFilter) return;
+            if (d.expected_close_date && d.stage !== 'won' && d.stage !== 'lost') {
+              events.push({
+                id: d.id,
+                date: d.expected_close_date,
+                eventType: 'deal',
+                typeLabel: '完了予定日',
+                icon: '📋',
+                title: d.title + ' (¥' + formatNumber(d.amount) + ')',
+                details: 'フェーズ: ' + getStageLabel(d.stage) + ' / 確度: ' + d.probability + '%',
+                customerName: d.customer_name,
+                customerId: d.customer_id,
+                userName: d.user_name,
+                userId: d.user_id,
+                isCompleted: false
+              });
+            }
+          });
+
+          return events;
+        });
+
+        const calendarGridDays = computed(() => {
+          const year = calendarYear.value;
+          const month = calendarMonth.value;
+          const firstDay = new Date(year, month, 1);
+          const lastDay = new Date(year, month + 1, 0);
+          
+          const days = [];
+          const startDayOfWeek = firstDay.getDay();
+          
+          const prevMonthLastDay = new Date(year, month, 0).getDate();
+          for (let i = startDayOfWeek - 1; i >= 0; i--) {
+            const d = prevMonthLastDay - i;
+            const pDate = new Date(year, month - 1, d);
+            const dateStr = pDate.toISOString().slice(0, 10);
+            days.push({
+              dateStr,
+              dayNum: d,
+              dayOfWeek: pDate.getDay(),
+              isCurrentMonth: false,
+              isToday: dateStr === new Date().toISOString().slice(0, 10),
+              events: calendarEvents.value.filter(e => e.date === dateStr)
+            });
+          }
+
+          for (let d = 1; d <= lastDay.getDate(); d++) {
+            const cDate = new Date(year, month, d);
+            const yyyy = cDate.getFullYear();
+            const mm = String(cDate.getMonth() + 1).padStart(2, '0');
+            const dd = String(cDate.getDate()).padStart(2, '0');
+            const dateStr = `${yyyy}-${mm}-${dd}`;
+            days.push({
+              dateStr,
+              dayNum: d,
+              dayOfWeek: cDate.getDay(),
+              isCurrentMonth: true,
+              isToday: dateStr === new Date().toISOString().slice(0, 10),
+              events: calendarEvents.value.filter(e => e.date === dateStr)
+            });
+          }
+
+          const remaining = 35 - days.length > 0 ? 35 - days.length : (42 - days.length > 0 ? 42 - days.length : 0);
+          for (let d = 1; d <= remaining; d++) {
+            const nDate = new Date(year, month + 1, d);
+            const dateStr = nDate.toISOString().slice(0, 10);
+            days.push({
+              dateStr,
+              dayNum: d,
+              dayOfWeek: nDate.getDay(),
+              isCurrentMonth: false,
+              isToday: dateStr === new Date().toISOString().slice(0, 10),
+              events: calendarEvents.value.filter(e => e.date === dateStr)
+            });
+          }
+
+          return days;
+        });
+
+        const selectedDayEvents = computed(() => {
+          if (!selectedCalendarDate.value) return [];
+          return calendarEvents.value.filter(e => e.date === selectedCalendarDate.value);
+        });
+
+        const formatSelectedDateHeader = computed(() => {
+          if (!selectedCalendarDate.value) return '';
+          const parts = selectedCalendarDate.value.split('-');
+          if (parts.length < 3) return selectedCalendarDate.value;
+          const dt = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+          const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+          return `${parts[0]}年${Number(parts[1])}月${Number(parts[2])}日 (${dayNames[dt.getDay()]})`;
+        });
+
+        // Today & Agenda Timeline Computeds
+        const todayStr = computed(() => new Date().toISOString().slice(0, 10));
+        
+        const todayEvents = computed(() => {
+          return calendarEvents.value.filter(e => e.date === todayStr.value);
+        });
+
+        const upcomingAgendaDays = computed(() => {
+          const result = [];
+          const start = new Date();
+          const dOfWeekLabels = ['日', '月', '火', '水', '木', '金', '土'];
+          for (let i = 0; i < 14; i++) {
+            const d = new Date(start.getTime() + i * 86400000);
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            const dateStr = `${yyyy}-${mm}-${dd}`;
+            const dayEvents = calendarEvents.value.filter(e => e.date === dateStr);
+            if (dayEvents.length > 0) {
+              result.push({
+                dateStr,
+                isToday: i === 0,
+                dateLabel: `${d.getMonth() + 1}月${d.getDate()}日 (${dOfWeekLabels[d.getDay()]})`,
+                events: dayEvents
+              });
+            }
+          }
+          return result;
+        });
+
+        const isInactiveDeal = (deal) => {
+          if (!deal || deal.stage === 'won' || deal.stage === 'lost') return false;
+          if (!deal.updated_at) return false;
+          const days = (Date.now() - new Date(deal.updated_at).getTime()) / (1000 * 3600 * 24);
+          return days >= 14;
+        };
+
+        const copyForLine = (ev) => {
+          const text = `【営業予定・報告】${ev.customerName || '取引先'}
+担当: ${ev.userName || '担当'}
+種別: ${ev.typeLabel || '商談'} (${ev.date || '本日'})
+内容: ${ev.title || ''}${ev.details ? '\n詳細: ' + ev.details : ''}`;
+          navigator.clipboard.writeText(text);
+          showToast('LINE共有用テキストをコピーしました！');
+        };
+
+        const appendFeel = (feelText) => {
+          if (activityForm.value.details) {
+            activityForm.value.details = feelText + '\n' + activityForm.value.details;
+          } else {
+            activityForm.value.details = feelText + '\n';
+          }
+          showToast('感触スタンプを追加しました');
+        };
+
+        const setNextActionPreset = (title, daysFromNow) => {
+          activityForm.value.next_action = title;
+          const targetDate = new Date(Date.now() + daysFromNow * 86400000).toISOString().slice(0, 10);
+          activityForm.value.next_action_date = targetDate;
+          showToast('次回ToDoを設定しました');
+        };
+
+        const prevCalendarMonth = () => {
+          if (calendarMonth.value === 0) {
+            calendarMonth.value = 11;
+            calendarYear.value -= 1;
+          } else {
+            calendarMonth.value -= 1;
+          }
+        };
+
+        const nextCalendarMonth = () => {
+          if (calendarMonth.value === 11) {
+            calendarMonth.value = 0;
+            calendarYear.value += 1;
+          } else {
+            calendarMonth.value += 1;
+          }
+        };
+
+        const todayCalendarMonth = () => {
+          const t = new Date();
+          calendarYear.value = t.getFullYear();
+          calendarMonth.value = t.getMonth();
+          selectedCalendarDate.value = t.toISOString().slice(0, 10);
+        };
+
+        const openNewActivityForDate = (dateStr) => {
+          openNewActivityModal();
+          if (dateStr) {
+            activityForm.value.activity_date = dateStr;
+            activityForm.value.next_action_date = dateStr;
+          }
+        };
+
+        // Formatters & Badges
+        const formatNumber = (num) => {
+          if (!num) return '0';
+          return Number(num).toLocaleString('ja-JP');
+        };
+
+        const getStageHex = (stageId) => {
+          const map = {
+            'lead': '#94a3b8', 'meeting': '#3b82f6', 'proposal': '#f59e0b',
+            'negotiation': '#8b5cf6', 'won': '#10b981', 'lost': '#f43f5e'
+          };
+          return map[stageId] || '#94a3b8';
+        };
+
+        const getStageLabel = (stageId) => {
+          const s = stages.value.find(st => st.id === stageId);
+          return s ? s.label : stageId;
+        };
+
+        const getProbBadgeClass = (prob) => {
+          if (prob >= 80) return 'bg-purple-50 text-purple-700 border border-purple-200/60';
+          if (prob >= 60) return 'bg-amber-50 text-amber-700 border border-amber-200/60';
+          if (prob >= 30) return 'bg-blue-50 text-blue-700 border border-blue-200/60';
+          return 'bg-slate-100 text-slate-600';
+        };
+
+        const getActivityIcon = (type) => {
+          const icons = { 'meeting': '💻', 'visit': '🚶', 'call': '📞', 'email': '✉️' };
+          return icons[type] || '📝';
+        };
+
+        const getDealsInStage = (stageId) => {
+          return filteredDeals.value.filter(d => d.stage === stageId);
+        };
+
+        const getStageTotal = (stageId) => {
+          return getDealsInStage(stageId).reduce((sum, d) => sum + (d.amount || 0), 0);
+        };
+
+        const getDealsForCustomer = (customerId) => {
+          return deals.value.filter(d => d.customer_id === customerId);
+        };
+
+        const getDealsForUser = (userId) => {
+          return deals.value.filter(d => d.user_id === userId);
+        };
+
+        const copyShareUrl = () => {
+          navigator.clipboard.writeText('http://192.168.128.73:8088/');
+          copyStatus.value = 'コピー完了！';
+          setTimeout(() => copyStatus.value = '', 2000);
+        };
+
+        const copyTunnelUrl = () => {
+          const url = tunnelUrl.value || 'https://graduates-decreased-ultra-combine.trycloudflare.com';
+          navigator.clipboard.writeText(url);
+          copyTunnelStatus.value = 'コピー完了！';
+          setTimeout(() => copyTunnelStatus.value = '', 2000);
+        };
+
+        const openShareModal = () => {
+          showShareModal.value = true;
+          nextTick(() => {
+            const container = document.getElementById('qrcode-box');
+            if (container) {
+              container.innerHTML = '';
+              const targetUrl = tunnelUrl.value || 'http://192.168.128.73:8088/';
+              try {
+                if (typeof QRCode !== 'undefined') {
+                  new QRCode(container, {
+                    text: targetUrl,
+                    width: 140,
+                    height: 140,
+                    colorDark: '#0f172a',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.M
+                  });
+                }
+              } catch (err) {
+                console.error('QR code render error:', err);
+              }
+            }
+          });
+        };
+
+        // Authentication & Security Methods
+        const apiFetch = async (url, options = {}) => {
+          const token = localStorage.getItem('gloval_token') || sessionStorage.getItem('gloval_token') || '';
+          options.headers = {
+            ...(options.headers || {}),
+            'X-Auth-Token': token
+          };
+          const res = await fetch(url, options);
+          if (res.status === 401) {
+            isAuthenticated.value = false;
+            throw new Error('Unauthorized');
+          }
+          return res;
+        };
+
+        const handleLogin = async () => {
+          loginError.value = '';
+          const pwd = loginPassword.value.trim();
+          if (!pwd) {
+            loginError.value = '合言葉を入力してください';
+            return;
+          }
+          try {
+            const res = await fetch('/api/auth/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ password: pwd })
+            });
+            const data = await res.json();
+            if (data.success && data.token) {
+              if (rememberMe.value) {
+                localStorage.setItem('gloval_token', data.token);
+              } else {
+                sessionStorage.setItem('gloval_token', data.token);
+              }
+              isAuthenticated.value = true;
+              loginPassword.value = '';
+              showToast('ログインしました');
+              await loadBootstrap();
+            } else {
+              loginError.value = data.error || '合言葉が違います';
+            }
+          } catch (e) {
+            loginError.value = '通信エラーが発生しました';
+          }
+        };
+
+        const logout = () => {
+          localStorage.removeItem('gloval_token');
+          sessionStorage.removeItem('gloval_token');
+          isAuthenticated.value = false;
+          showSettingsModal.value = false;
+          showToast('ログアウトしました');
+        };
+
+        const handleChangePassword = async () => {
+          pwdChangeError.value = '';
+          if (!pwdChangeForm.value.old_password || !pwdChangeForm.value.new_password) {
+            pwdChangeError.value = 'すべての項目を入力してください';
+            return;
+          }
+          try {
+            const res = await apiFetch('/api/auth/change-password', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(pwdChangeForm.value)
+            });
+            const data = await res.json();
+            if (data.success && data.token) {
+              if (localStorage.getItem('gloval_token')) {
+                localStorage.setItem('gloval_token', data.token);
+              } else {
+                sessionStorage.setItem('gloval_token', data.token);
+              }
+              pwdChangeForm.value = { old_password: '', new_password: '' };
+              showToast('合言葉を更新しました');
+              showSettingsModal.value = false;
+            } else {
+              pwdChangeError.value = data.error || '合言葉の変更に失敗しました';
+            }
+          } catch (e) {
+            pwdChangeError.value = 'エラーが発生しました';
+          }
+        };
+
+        const downloadBackup = () => {
+          const token = localStorage.getItem('gloval_token') || sessionStorage.getItem('gloval_token') || '';
+          window.location.href = `/api/backup/download?token=${encodeURIComponent(token)}`;
+          showToast('バックアップ保存を開始しました');
+        };
+
+        const clearDemoData = async () => {
+          if (!confirm('デモデータ（案件・顧客・活動ログ）を全消去し、株式会社GLOVALの本番運用を開始しますか？\n\n※黒川さん・奥中さん・屋木さんのアカウントは残ります。\n※実行前に自動でバックアップが保存されます。')) return;
+          try {
+            const res = await apiFetch('/api/clear-demo', { method: 'POST' });
+            const data = await res.json();
+            showToast(data.message || '本番運用を開始しました');
+            showSettingsModal.value = false;
+            await loadBootstrap();
+          } catch (e) {
+            console.error('Error clearing demo:', e);
+          }
+        };
+
+        // User Edit
+        const openEditUserModal = (u) => {
+          userForm.value = { ...u };
+          userModalOpen.value = true;
+        };
+
+        const saveUser = async () => {
+          try {
+            await apiFetch(`/api/users/${userForm.value.id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(userForm.value)
+            });
+            userModalOpen.value = false;
+            showToast('メンバー情報を更新しました');
+            await loadBootstrap();
+          } catch (e) {
+            console.error('Error saving user:', e);
+          }
+        };
+
+        // Attachments & Card Photos
+        const customerAttachments = ref([]);
+        const previewImageSrc = ref(null);
+
+        const loadCustomerAttachments = async (customerId) => {
+          try {
+            const res = await apiFetch(`/api/attachments?target_type=customer&target_id=${customerId}`);
+            customerAttachments.value = await res.json();
+          } catch (e) {
+            console.error('Error loading attachments:', e);
+          }
+        };
+
+        const uploadCustomerImage = async (e, customerId) => {
+          const file = e.target.files[0];
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const img = new Image();
+            img.onload = async () => {
+              const canvas = document.createElement('canvas');
+              const maxDim = 800;
+              let width = img.width;
+              let height = img.height;
+              if (width > height) {
+                if (width > maxDim) {
+                  height = Math.round((height * maxDim) / width);
+                  width = maxDim;
+                }
+              } else {
+                if (height > maxDim) {
+                  width = Math.round((width * maxDim) / height);
+                  height = maxDim;
+                }
+              }
+              canvas.width = width;
+              canvas.height = height;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, width, height);
+              const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+
+              try {
+                await apiFetch('/api/attachments', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    target_type: 'customer',
+                    target_id: customerId,
+                    filename: file.name || 'photo.jpg',
+                    data_url: dataUrl
+                  })
+                });
+                showToast('名刺・写真を保存しました');
+                await loadCustomerAttachments(customerId);
+              } catch (err) {
+                console.error('Upload error:', err);
+                showToast('保存に失敗しました');
+              }
+            };
+            img.src = event.target.result;
+          };
+          reader.readAsDataURL(file);
+          e.target.value = '';
+        };
+
+        const deleteAttachment = async (id, customerId) => {
+          if (!confirm('この画像を削除しますか？')) return;
+          try {
+            await apiFetch(`/api/attachments/${id}`, { method: 'DELETE' });
+            showToast('画像を削除しました');
+            await loadCustomerAttachments(customerId);
+          } catch (e) {
+            console.error('Error deleting attachment:', e);
+          }
+        };
+
+        // Smart Tags Toggle in Customer Form
+        const toggleCustomerTag = (tag) => {
+          const currentTags = customerForm.value.tags ? customerForm.value.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
+          const idx = currentTags.indexOf(tag);
+          if (idx >= 0) {
+            currentTags.splice(idx, 1);
+          } else {
+            currentTags.push(tag);
+          }
+          customerForm.value.tags = currentTags.join(',');
+        };
+
+        const toggleDealTag = (tag) => {
+          const currentTags = dealForm.value.tags ? dealForm.value.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
+          const idx = currentTags.indexOf(tag);
+          if (idx >= 0) {
+            currentTags.splice(idx, 1);
+          } else {
+            currentTags.push(tag);
+          }
+          dealForm.value.tags = currentTags.join(',');
+        };
+
+        // Lost Reasons & Analysis
+        const lostReasonPresets = [
+          '価格が高い・予算超過',
+          '競合他社に決定',
+          '時期尚早・導入見送り',
+          '連絡途絶・失注',
+          '社内方針変更',
+          'その他'
+        ];
+        const showLostAnalysis = ref(false);
+
+        // vCard (.vcf) Export for iPhone Contacts
+        const exportVCard = (cust) => {
+          const name = cust.contact_name || cust.name;
+          const org = cust.name;
+          const phone = cust.contact_phone || '';
+          const email = cust.contact_email || '';
+          const notes = cust.notes || '';
+
+          const vcard = [
+            'BEGIN:VCARD',
+            'VERSION:3.0',
+            `FN:${name}`,
+            `ORG:${org}`,
+            `TITLE:${cust.industry || ''}`,
+            phone ? `TEL;TYPE=CELL,VOICE:${phone}` : '',
+            email ? `EMAIL;TYPE=PREF,INTERNET:${email}` : '',
+            notes ? `NOTE:${notes.replace(/\n/g, '\\n')}` : '',
+            'END:VCARD'
+          ].filter(Boolean).join('\r\n');
+
+          const blob = new Blob([vcard], { type: 'text/vcard;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.setAttribute('download', `${cust.name}_連絡先.vcf`);
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+          showToast('iPhone連絡先用ファイル(.vcf)を書き出しました');
+        };
+
+        // Customer Detail
+        const openCustomerDetail = (cust) => {
+          selectedCustomer.value = cust;
+          loadCustomerAttachments(cust.id);
+        };
+
+        const openCustomerDetailById = (custId) => {
+          const c = customers.value.find(cust => cust.id === custId);
+          if (c) {
+            selectedCustomer.value = c;
+            loadCustomerAttachments(c.id);
+          }
+        };
+
+        const openNewDealForCustomer = (cust) => {
+          openNewDealModal();
+          dealForm.value.customer_id = cust.id;
+        };
+
+        const openNewActivityForCustomer = (cust) => {
+          openNewActivityModal();
+          activityForm.value.customer_id = cust.id;
+        };
+
+        // API Calls
+        const loadBootstrap = async () => {
+          try {
+            const res = await apiFetch('/api/bootstrap');
+            const data = await res.json();
+            users.value = data.users;
+            customers.value = data.customers;
+            deals.value = data.deals;
+            activities.value = data.activities;
+            stages.value = data.stages;
+            if (data.tunnel_url) {
+              tunnelUrl.value = data.tunnel_url;
+            }
+            if (users.value.length > 0 && !currentUserId.value) {
+              currentUserId.value = users.value[0].id;
+            }
+            if (selectedCustomer.value) {
+              selectedCustomer.value = customers.value.find(c => c.id === selectedCustomer.value.id) || null;
+            }
+            await loadAnalytics();
+          } catch (e) {
+            console.error('Error loading CRM data:', e);
+          }
+        };
+
+        const loadAnalytics = async () => {
+          try {
+            const res = await apiFetch('/api/analytics');
+            analytics.value = await res.json();
+            nextTick(() => {
+              renderCharts();
+            });
+          } catch (e) {
+            console.error('Error loading analytics:', e);
+          }
+        };
+
+        // Charts
+        let perfChartInstance = null;
+        let stageChartInstance = null;
+
+        const renderCharts = () => {
+          const perfCanvas = document.getElementById('userPerfChart');
+          if (perfCanvas && analytics.value.user_perf) {
+            if (perfChartInstance) perfChartInstance.destroy();
+            const perfData = analytics.value.user_perf;
+            const datasets = [
+              { 
+                label: '受注確定額', 
+                data: perfData.map(u => u.won), 
+                backgroundColor: '#10b981', 
+                borderRadius: 6 
+              },
+              { 
+                label: '仕掛見込 (確度加重)', 
+                data: perfData.map(u => u.pipeline_weighted), 
+                backgroundColor: '#6366f1', 
+                borderRadius: 6 
+              }
+            ];
+            const hasTargets = perfData.some(u => (u.target || 0) > 0);
+            if (hasTargets) {
+              datasets.push({
+                label: '営業目標',
+                data: perfData.map(u => u.target),
+                type: 'line',
+                borderColor: '#f59e0b',
+                borderWidth: 2,
+                borderDash: [5, 5],
+                fill: false,
+                pointRadius: 4
+              });
+            }
+
+            perfChartInstance = new Chart(perfCanvas, {
+              type: 'bar',
+              data: {
+                labels: perfData.map(u => u.name),
+                datasets: datasets
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    position: 'top',
+                    labels: { font: { family: 'Inter', size: 11, weight: 600 } }
+                  }
+                },
+                scales: {
+                  x: { stacked: true, grid: { display: false } },
+                  y: { 
+                    stacked: false, 
+                    grid: { color: '#f1f5f9' },
+                    ticks: { callback: v => '¥' + (v / 10000).toLocaleString() + '万' } 
+                  }
+                }
+              }
+            });
+          }
+
+          const stageCanvas = document.getElementById('stageDoughnutChart');
+          if (stageCanvas && analytics.value.stages_amount) {
+            if (stageChartInstance) stageChartInstance.destroy();
+            const stageAmounts = stages.value.map(s => analytics.value.stages_amount[s.id] || 0);
+            stageChartInstance = new Chart(stageCanvas, {
+              type: 'doughnut',
+              data: {
+                labels: stages.value.map(s => s.label),
+                datasets: [{ 
+                  data: stageAmounts, 
+                  backgroundColor: stages.value.map(s => getStageHex(s.id)), 
+                  borderWidth: 2,
+                  borderColor: '#ffffff'
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '74%',
+                plugins: { legend: { display: false } }
+              }
+            });
+          }
+        };
+
+        // Confetti & Celebration
+        const triggerConfetti = () => {
+          if (typeof confetti === 'function') {
+            confetti({
+              particleCount: 120,
+              spread: 80,
+              origin: { y: 0.6 }
+            });
+            setTimeout(() => {
+              confetti({
+                particleCount: 60,
+                angle: 60,
+                spread: 60,
+                origin: { x: 0 }
+              });
+              confetti({
+                particleCount: 60,
+                angle: 120,
+                spread: 60,
+                origin: { x: 1 }
+              });
+            }, 300);
+          }
+        };
+
+        // Quotation / Estimates
+        const showQuoteModal = ref(false);
+        const quoteDeal = ref(null);
+
+        const openQuotationModal = (deal) => {
+          quoteDeal.value = deal;
+          showQuoteModal.value = true;
+        };
+
+        const printQuotation = () => {
+          window.print();
+        };
+
+        const copyQuotationSummary = async () => {
+          if (!quoteDeal.value) return;
+          const d = quoteDeal.value;
+          const tax = Math.round((d.amount || 0) * 0.1);
+          const total = Math.round((d.amount || 0) * 1.1);
+          const text = `【御見積内容のご案内】
+宛先: ${d.customer_name} 御中
+件名: ${d.title}
+御見積金額: ¥${formatNumber(total)} (税込)
+(税抜小計: ¥${formatNumber(d.amount)} / 消費税: ¥${formatNumber(tax)})
+有効期限: 発行より30日間
+担当: 株式会社GLOVAL ${d.user_name || ''}
+連絡先: ${getUserEmail(d.user_id)}
+
+内容をご確認の上、ご検討のほどよろしくお願いいたします。`;
+          try {
+            await navigator.clipboard.writeText(text);
+            showToast('見積内容をクリップボードにコピーしました！');
+          } catch(e) {
+            prompt('以下をコピーしてください:', text);
+          }
+        };
+
+        const getUserEmail = (userId) => {
+          const u = users.value.find(user => user.id === userId);
+          return u ? u.email : 'info@gloval.com';
+        };
+
+        const getTodayDate = () => {
+          const d = new Date();
+          return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
+        };
+
+        const getQuotationNumber = (deal) => {
+          const d = new Date();
+          const ymd = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+          return `${ymd}-${deal ? deal.id : '100'}`;
+        };
+
+        // Web Speech API Voice Recognition (iPhone Safari & Chrome)
+        const isRecordingSpeech = ref(false);
+        let speechRecognition = null;
+
+        const toggleSpeechRecognition = () => {
+          const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+          if (!SpeechRecognition) {
+            alert('お使いのブラウザは音声入力に対応していません。SafariまたはChromeの最新版をお使いください。');
+            return;
+          }
+
+          if (isRecordingSpeech.value) {
+            if (speechRecognition) {
+              speechRecognition.stop();
+            }
+            isRecordingSpeech.value = false;
+            return;
+          }
+
+          try {
+            speechRecognition = new SpeechRecognition();
+            speechRecognition.lang = 'ja-JP';
+            speechRecognition.continuous = true;
+            speechRecognition.interimResults = false;
+
+            speechRecognition.onstart = () => {
+              isRecordingSpeech.value = true;
+              showToast('🎙️ 音声入力を開始しました（話してください）');
+            };
+
+            speechRecognition.onresult = (event) => {
+              let transcript = '';
+              for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                  transcript += event.results[i][0].transcript;
+                }
+              }
+              if (transcript) {
+                if (activityForm.value.details) {
+                  activityForm.value.details += ' ' + transcript;
+                } else {
+                  activityForm.value.details = transcript;
+                }
+                showToast('音声テキストを追記しました');
+              }
+            };
+
+            speechRecognition.onerror = (e) => {
+              console.warn('Speech recognition error:', e);
+              isRecordingSpeech.value = false;
+              if (e.error !== 'no-speech') {
+                showToast('音声入力エラー: ' + e.error);
+              }
+            };
+
+            speechRecognition.onend = () => {
+              isRecordingSpeech.value = false;
+            };
+
+            speechRecognition.start();
+          } catch (e) {
+            console.error('Speech recognition init failed:', e);
+            isRecordingSpeech.value = false;
+          }
+        };
+
+        // Drag & Drop
+        let draggedDeal = null;
+        const onDragStartDeal = (e, deal) => {
+          draggedDeal = deal;
+          e.dataTransfer.setData('text/plain', deal.id);
+        };
+
+        const onDropDeal = async (e, stageId) => {
+          if (!draggedDeal || draggedDeal.stage === stageId) return;
+          await updateDealStage(draggedDeal.id, stageId);
+          draggedDeal = null;
+        };
+
+        const updateDealStage = async (dealId, newStage) => {
+          try {
+            await apiFetch(`/api/deals/${dealId}/stage`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ stage: newStage })
+            });
+            if (newStage === 'won') {
+              triggerConfetti();
+              showToast('🎉 受注おめでとうございます！');
+            } else {
+              showToast('商談フェーズを更新しました');
+            }
+            await loadBootstrap();
+          } catch (e) {
+            console.error('Error updating stage:', e);
+          }
+        };
+
+        // Deal Modal
+        const openNewDealModal = () => {
+          editingDealId.value = null;
+          dealForm.value = {
+            title: '',
+            customer_id: customers.value[0]?.id || 1,
+            user_id: currentUserId.value,
+            amount: 2000000,
+            stage: 'lead',
+            probability: 10,
+            expected_close_date: new Date(Date.now() + 14*86400000).toISOString().slice(0, 10),
+            lost_reason: '',
+            notes: ''
+          };
+          dealModalOpen.value = true;
+        };
+
+        const openNewDealModalWithStage = (stageId) => {
+          openNewDealModal();
+          dealForm.value.stage = stageId;
+          onStageChangeInModal();
+        };
+
+        const openEditDealModal = (deal) => {
+          editingDealId.value = deal.id;
+          dealForm.value = { ...deal };
+          dealModalOpen.value = true;
+        };
+
+        const onStageChangeInModal = () => {
+          const s = stages.value.find(st => st.id === dealForm.value.stage);
+          if (s) dealForm.value.probability = s.prob;
+        };
+
+        const saveDeal = async () => {
+          try {
+            if (editingDealId.value) {
+              await apiFetch(`/api/deals/${editingDealId.value}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dealForm.value)
+              });
+              if (dealForm.value.stage === 'won') {
+                triggerConfetti();
+                showToast('🎉 受注おめでとうございます！');
+              } else {
+                showToast('案件を更新しました');
+              }
+            } else {
+              await apiFetch('/api/deals', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dealForm.value)
+              });
+              if (dealForm.value.stage === 'won') {
+                triggerConfetti();
+                showToast('🎉 受注おめでとうございます！');
+              } else {
+                showToast('新規案件を登録しました');
+              }
+            }
+            dealModalOpen.value = false;
+            await loadBootstrap();
+          } catch (e) {
+            console.error('Error saving deal:', e);
+          }
+        };
+
+        const deleteDeal = async (id) => {
+          if (!confirm('この案件を削除しますか？')) return;
+          try {
+            await apiFetch(`/api/deals/${id}`, { method: 'DELETE' });
+            dealModalOpen.value = false;
+            showToast('案件を削除しました');
+            await loadBootstrap();
+          } catch (e) {
+            console.error('Error deleting deal:', e);
+          }
+        };
+
+        // Customer Modal
+        const openNewCustomerModal = () => {
+          editingCustomerId.value = null;
+          customerForm.value = { name: '', industry: '', contact_name: '', contact_email: '', contact_phone: '', status: 'active', notes: '' };
+          customerModalOpen.value = true;
+        };
+
+        const openEditCustomerModal = (c) => {
+          editingCustomerId.value = c.id;
+          customerForm.value = { ...c };
+          customerModalOpen.value = true;
+        };
+
+        const saveCustomer = async () => {
+          try {
+            if (editingCustomerId.value) {
+              await apiFetch(`/api/customers/${editingCustomerId.value}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(customerForm.value)
+              });
+              showToast('取引先情報を更新しました');
+            } else {
+              await apiFetch('/api/customers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(customerForm.value)
+              });
+              showToast('新規取引先を登録しました');
+            }
+            customerModalOpen.value = false;
+            await loadBootstrap();
+          } catch (e) {
+            console.error('Error saving customer:', e);
+          }
+        };
+
+        const deleteCustomer = async (id) => {
+          if (!confirm('この取引先を削除しますか？関連する案件も削除される場合があります。')) return;
+          try {
+            await apiFetch(`/api/customers/${id}`, { method: 'DELETE' });
+            if (selectedCustomer.value?.id === id) selectedCustomer.value = null;
+            showToast('取引先を削除しました');
+            await loadBootstrap();
+          } catch (e) {
+            console.error('Error deleting customer:', e);
+          }
+        };
+
+        // CSV Import
+        const handleFileSelect = (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            importCsvText.value = event.target.result;
+          };
+          reader.readAsText(file);
+        };
+
+        const executeImport = async () => {
+          try {
+            const lines = importCsvText.value.trim().split('\n');
+            const items = [];
+            for (let i = 0; i < lines.length; i++) {
+              const line = lines[i].trim();
+              if (!line) continue;
+              if (i === 0 && (line.includes('企業名') || line.toLowerCase().includes('name'))) continue;
+              const cols = line.split(',').map(c => c.trim().replace(/^["']|["']$/g, ''));
+              if (cols[0]) {
+                items.push({
+                  name: cols[0],
+                  industry: cols[1] || '',
+                  contact_name: cols[2] || '',
+                  contact_email: cols[3] || '',
+                  contact_phone: cols[4] || '',
+                  status: 'active',
+                  notes: cols[5] || ''
+                });
+              }
+            }
+
+            if (items.length === 0) {
+              alert('有効なデータが見つかりませんでした。');
+              return;
+            }
+
+            const res = await apiFetch('/api/import/customers', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ customers: items })
+            });
+            const data = await res.json();
+            showToast(`${data.imported_count} 件の顧客データをインポートしました`);
+            showImportModal.value = false;
+            importCsvText.value = '';
+            await loadBootstrap();
+          } catch (e) {
+            console.error('Import error:', e);
+            alert('インポート中にエラーが発生しました。');
+          }
+        };
+
+        // Activity Modal
+        const openNewActivityModal = () => {
+          activityForm.value = {
+            customer_id: customers.value[0]?.id || null,
+            deal_id: null,
+            user_id: currentUserId.value,
+            type: 'meeting',
+            activity_date: selectedCalendarDate.value || new Date().toISOString().slice(0, 10),
+            summary: '',
+            details: '',
+            next_action: '',
+            next_action_date: new Date(Date.now() + 7*86400000).toISOString().slice(0, 10)
+          };
+          activityModalOpen.value = true;
+        };
+
+        const saveActivity = async () => {
+          try {
+            await apiFetch('/api/activities', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(activityForm.value)
+            });
+            activityModalOpen.value = false;
+            showToast('活動・予定を記録しました');
+            await loadBootstrap();
+          } catch (e) {
+            console.error('Error saving activity:', e);
+          }
+        };
+
+        const toggleActivity = async (id) => {
+          try {
+            await apiFetch(`/api/activities/${id}/toggle`, { method: 'PUT' });
+            showToast('ToDoステータスを更新しました');
+            await loadBootstrap();
+          } catch (e) {
+            console.error('Error toggling activity:', e);
+          }
+        };
+
+        const deleteActivity = async (id) => {
+          if (!confirm('この活動ログを削除しますか？')) return;
+          try {
+            await apiFetch(`/api/activities/${id}`, { method: 'DELETE' });
+            showToast('活動ログを削除しました');
+            await loadBootstrap();
+          } catch (e) {
+            console.error('Error deleting activity:', e);
+          }
+        };
+
+        const openMapForCustomer = (cust) => {
+          const query = encodeURIComponent(cust.name + (cust.industry ? ' ' + cust.industry : ''));
+          const isMacOrIos = /Mac|iPhone|iPad|iPod/.test(navigator.userAgent);
+          const url = isMacOrIos ? `https://maps.apple.com/?q=${query}` : `https://www.google.com/maps/search/?api=1&query=${query}`;
+          window.open(url, '_blank');
+        };
+
+        const resetDemoData = async () => {
+          if (!confirm('デモデータを初期状態にリセットしますか？')) return;
+          try {
+            await apiFetch('/api/reset-demo', { method: 'POST' });
+            showToast('デモデータをリセットしました');
+            showSettingsModal.value = false;
+            await loadBootstrap();
+          } catch (e) {
+            console.error('Error resetting demo:', e);
+          }
+        };
+
+        watch(currentTab, (newTab) => {
+          if (newTab === 'dashboard') {
+            nextTick(() => renderCharts());
+          }
+        });
+
+        onMounted(async () => {
+          if (isAuthenticated.value) {
+            try {
+              await loadBootstrap();
+            } catch (e) {
+              isAuthenticated.value = false;
+            }
+          }
+        });
+
+        return {
+          users, customers, deals, activities, stages, analytics,
+          currentTab, currentUserId, currentUser, filterUserId, mobilePipelineStage, globalSearchQuery, customerSearchQuery, onlyPendingTodo, toastMessage,
+          activeDealsCount, averageProbability, averageWonDealAmount, nextPendingDate,
+          todayStr, todayEvents, calendarViewMode, upcomingAgendaDays, isInactiveDeal, copyForLine, appendFeel, setNextActionPreset,
+          calendarYear, calendarMonth, selectedCalendarDate, calendarEvents, calendarGridDays, selectedDayEvents, formatSelectedDateHeader,
+          prevCalendarMonth, nextCalendarMonth, todayCalendarMonth, openNewActivityForDate,
+          tabs, filteredDeals, filteredDealsTotal, filteredCustomers, filteredActivities, pendingActivities, pendingActivitiesCount,
+          customerDealsForActivity, customerDeals, customerActivities, selectedCustomer,
+          showNeglectedOnly, isCustomerNeglected, getLastContactText, neglectedCustomersCount,
+          showQuoteModal, quoteDeal, openQuotationModal, printQuotation, copyQuotationSummary, getUserEmail, getTodayDate, getQuotationNumber,
+          isRecordingSpeech, toggleSpeechRecognition, triggerConfetti,
+          openMapForCustomer,
+          customerAttachments, previewImageSrc, loadCustomerAttachments, uploadCustomerImage, deleteAttachment,
+          presetTags, selectedTagFilter, toggleCustomerTag, toggleDealTag, lostReasonPresets, showLostAnalysis, exportVCard,
+          showShareModal, copyStatus, copyShareUrl, tunnelUrl, copyTunnelStatus, copyTunnelUrl, openShareModal,
+          isAuthenticated, loginPassword, loginError, rememberMe, handleLogin, logout,
+          showSettingsModal, pwdChangeForm, pwdChangeError, handleChangePassword, downloadBackup, clearDemoData,
+          showImportModal, importCsvText, handleFileSelect, executeImport,
+          userModalOpen, userForm, openEditUserModal, saveUser,
+          dealModalOpen, editingDealId, dealForm,
+          customerModalOpen, editingCustomerId, customerForm,
+          activityModalOpen, activityForm,
+          formatNumber, getStageHex, getStageLabel, getProbBadgeClass, getActivityIcon, getDealsInStage, getStageTotal, getDealsForCustomer, getDealsForUser,
+          openCustomerDetail, openCustomerDetailById, openNewDealForCustomer, openNewActivityForCustomer,
+          onDragStartDeal, onDropDeal, updateDealStage,
+          openNewDealModal, openNewDealModalWithStage, openEditDealModal, onStageChangeInModal, saveDeal, deleteDeal,
+          openNewCustomerModal, openEditCustomerModal, saveCustomer, deleteCustomer,
+          openNewActivityModal, saveActivity, toggleActivity, deleteActivity, resetDemoData
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
